@@ -1,0 +1,187 @@
+package com.rensdev.juar4m.ui
+
+import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.bluetooth.BluetoothStatus
+import com.rensdev.juar4m.ui.components.BatteryIndicator
+import com.rensdev.juar4m.ui.components.BluetoothButton
+import com.rensdev.juar4m.ui.components.DndIndicator
+import com.rensdev.juar4m.ui.components.InfiniteMarquee
+import com.rensdev.juar4m.ui.components.MenuButton
+import com.rensdev.juar4m.ui.components.controller.DPadSection
+import com.rensdev.juar4m.ui.components.controller.ServoSection
+import com.rensdev.juar4m.ui.theme.GeistFontFamily
+import com.rensdev.juar4m.ui.theme.Theme
+import com.rensdev.juar4m.ui.theme.White
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withTimeoutOrNull
+
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@Composable
+fun MainContent(
+	viewModel: MainViewModel? = null,
+	bluetoothStatus: BluetoothStatus? = null,
+	content: (@Composable () -> Unit)? = null
+) {
+	@Suppress("LocalVariableName") val _bluetoothStatus by (viewModel?.bluetoothStatus ?: flowOf(
+		bluetoothStatus ?: BluetoothStatus.Disconnected
+	)).collectAsState(
+		initial = bluetoothStatus ?: BluetoothStatus.Disconnected
+	)
+
+	val snackbarHostState = remember { SnackbarHostState() }
+
+	LaunchedEffect(viewModel) {
+		viewModel?.userMessages?.collectLatest {
+			withTimeoutOrNull(1250) {
+				snackbarHostState.showSnackbar(
+					message = it.message,
+					withDismissAction = it.withDismissAction,
+					duration = SnackbarDuration.Indefinite
+				)
+			}
+		}
+	}
+
+	Theme {
+		Box(modifier = Modifier.fillMaxSize()) {
+			Scaffold(
+				modifier = Modifier
+					.fillMaxSize()
+					.windowInsetsPadding(WindowInsets.displayCutout),
+			) { _ ->
+				InfiniteMarquee(
+					modifier = Modifier.align(Alignment.BottomCenter),
+					text = "JUARA!", textStyle = TextStyle(
+						color = White.copy(alpha = 0.1f),
+						fontFamily = GeistFontFamily,
+						fontWeight = FontWeight.Black,
+						fontStyle = FontStyle.Italic
+					)
+				)
+//				Controller Screen
+				Row(
+					modifier = Modifier
+						.fillMaxSize()
+						.padding(horizontal = 16.dp)
+				) {
+					ServoSection(
+						viewModel = viewModel, modifier = Modifier
+							.weight(1f)
+							.fillMaxSize()
+					)
+					DPadSection(
+						modifier = Modifier
+							.weight(1f)
+							.fillMaxSize()
+					)
+				}
+
+//				Disabled overlay
+				if (_bluetoothStatus != BluetoothStatus.Connected) {
+					Box(
+						modifier = Modifier
+							.fillMaxSize()
+							.clickable(
+								indication = null, interactionSource = remember { MutableInteractionSource() }) { }
+							.background(Color(0xFF1A1A1A).copy(0.7f)))
+				}
+
+				Row(
+					modifier = Modifier
+						.fillMaxWidth()
+						.padding(24.dp, 4.dp),
+					horizontalArrangement = Arrangement.SpaceBetween,
+					verticalAlignment = Alignment.Top
+				) {
+					MenuButton(
+						modifier = Modifier,
+						viewModel = viewModel
+					)
+					Row(
+						horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+						verticalAlignment = Alignment.CenterVertically
+					) {
+						DndIndicator()
+						BatteryIndicator()
+					}
+
+				}
+				BluetoothButton(
+					viewModel = viewModel,
+					bluetoothStatus = _bluetoothStatus,
+					modifier = Modifier
+						.align(Alignment.TopCenter)
+						.padding(top = 8.dp)
+				)
+
+
+				content?.invoke()
+			}
+			SnackbarHost(
+				hostState = snackbarHostState,
+				modifier = Modifier
+					.align(Alignment.BottomStart)
+					.padding(top = 16.dp, end = 16.dp)
+					.safeDrawingPadding()
+			) { data ->
+				Snackbar(
+					snackbarData = data,
+					modifier = Modifier.widthIn(max = 400.dp),
+					containerColor = Color(0xFF17172B),
+					contentColor = White,
+					dismissActionContentColor = White,
+					shape = RoundedCornerShape(12.dp)
+				)
+			}
+		}
+
+
+	}
+}
+
+@Preview(widthDp = 960, heightDp = 580)
+@Composable
+fun MainContentPreview() {
+	MainContent(bluetoothStatus = BluetoothStatus.Connected)
+}
+
+//@Preview(widthDp = 960, heightDp = 580)
+@Composable
+fun MainContentDisconnectedPreview() {
+	MainContent(bluetoothStatus = BluetoothStatus.Disconnected)
+}

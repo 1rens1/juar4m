@@ -10,7 +10,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rensdev.juar4m.ui.components.controller.ServoState
 import com.rensdev.juar4m.ui.components.controller.ToggleServoDefaults
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 val Context.userPreferences: DataStore<Preferences> by preferencesDataStore("user_preferences")
@@ -19,7 +18,8 @@ class UserPreferences(private val context: Context) {
 	companion object {
 		val LAST_DEVICE_ADDRESS_KEY = stringPreferencesKey("last_device_address")
 		val VIBRATIONS_ENABLED_KEY = booleanPreferencesKey("vibrations_enabled")
-		val TIMER_MODE_ENABLED_KEY = booleanPreferencesKey("timer_mode_enabled")
+		val DISCONNECT_LOCK_KEY = booleanPreferencesKey("disconnect_lock")
+		val STOPWATCH_MODE_ENABLED_KEY = booleanPreferencesKey("stopwatch_mode_enabled")
 
 		val SERVO_A_RANGE_LOW_KEY = floatPreferencesKey("servo_a_range_low")
 		val SERVO_A_RANGE_HIGH_KEY = floatPreferencesKey("servo_a_range_high")
@@ -31,8 +31,7 @@ class UserPreferences(private val context: Context) {
 		val SERVO_B_STATE_KEY = booleanPreferencesKey("servo_b_state")
 	}
 
-	val lastDeviceAddress: Flow<String?> =
-		context.userPreferences.data.map { it[LAST_DEVICE_ADDRESS_KEY] }
+	val lastDeviceAddress = context.userPreferences.data.map { it[LAST_DEVICE_ADDRESS_KEY] }
 
 	suspend fun saveLastDeviceAddress(name: String?) {
 		context.userPreferences.edit { prefs ->
@@ -44,10 +43,7 @@ class UserPreferences(private val context: Context) {
 		}
 	}
 
-	val vibrationsEnabled: Flow<Boolean> =
-		context.userPreferences.data.map { it[VIBRATIONS_ENABLED_KEY] ?: true }
-	val timerModeEnabled: Flow<Boolean> =
-		context.userPreferences.data.map { it[TIMER_MODE_ENABLED_KEY] ?: false }
+	val vibrationsEnabled = context.userPreferences.data.map { it[VIBRATIONS_ENABLED_KEY] ?: true }
 
 	suspend fun saveVibrationsEnabled(enabled: Boolean) {
 		context.userPreferences.edit { prefs ->
@@ -55,21 +51,32 @@ class UserPreferences(private val context: Context) {
 		}
 	}
 
-	suspend fun saveTimerModeEnabled(enabled: Boolean) {
+	val disconnectLock = context.userPreferences.data.map { it[DISCONNECT_LOCK_KEY] ?: true }
+
+	suspend fun saveDisconnectLock(enabled: Boolean) {
 		context.userPreferences.edit { prefs ->
-			prefs[TIMER_MODE_ENABLED_KEY] = enabled
+			prefs[DISCONNECT_LOCK_KEY] = enabled
+		}
+	}
+
+
+	val stopwatchModeEnabled =
+		context.userPreferences.data.map { it[STOPWATCH_MODE_ENABLED_KEY] ?: false }
+
+	suspend fun saveStopwatchModeEnabled(enabled: Boolean) {
+		context.userPreferences.edit { prefs ->
+			prefs[STOPWATCH_MODE_ENABLED_KEY] = enabled
 		}
 	}
 
 //	Servo A
 
-	val servoARange: Flow<ClosedFloatingPointRange<Float>> =
-		context.userPreferences.data.map { prefs ->
-			val start = prefs[SERVO_A_RANGE_LOW_KEY] ?: ToggleServoDefaults.servoA.range.start
-			val end = prefs[SERVO_A_RANGE_HIGH_KEY] ?: ToggleServoDefaults.servoA.range.endInclusive
-			start..end
-		}
-	val servoAState: Flow<ServoState> = context.userPreferences.data.map { prefs ->
+	val servoARange = context.userPreferences.data.map { prefs ->
+		val start = prefs[SERVO_A_RANGE_LOW_KEY] ?: ToggleServoDefaults.servoA.range.start
+		val end = prefs[SERVO_A_RANGE_HIGH_KEY] ?: ToggleServoDefaults.servoA.range.endInclusive
+		start..end
+	}
+	val servoAState = context.userPreferences.data.map { prefs ->
 		val isHigh = prefs[SERVO_A_STATE_KEY] ?: (ToggleServoDefaults.servoA.state == ServoState.HIGH)
 		if (isHigh) ServoState.HIGH else ServoState.LOW
 	}
@@ -88,13 +95,12 @@ class UserPreferences(private val context: Context) {
 	}
 
 	//	Servo B
-	val servoBRange: Flow<ClosedFloatingPointRange<Float>> =
-		context.userPreferences.data.map { prefs ->
-			val start = prefs[SERVO_B_RANGE_LOW_KEY] ?: ToggleServoDefaults.servoB.range.start
-			val end = prefs[SERVO_B_RANGE_HIGH_KEY] ?: ToggleServoDefaults.servoB.range.endInclusive
-			start..end
-		}
-	val servoBState: Flow<ServoState> = context.userPreferences.data.map { prefs ->
+	val servoBRange = context.userPreferences.data.map { prefs ->
+		val start = prefs[SERVO_B_RANGE_LOW_KEY] ?: ToggleServoDefaults.servoB.range.start
+		val end = prefs[SERVO_B_RANGE_HIGH_KEY] ?: ToggleServoDefaults.servoB.range.endInclusive
+		start..end
+	}
+	val servoBState = context.userPreferences.data.map { prefs ->
 		val isHigh = prefs[SERVO_B_STATE_KEY] ?: (ToggleServoDefaults.servoB.state == ServoState.HIGH)
 		if (isHigh) ServoState.HIGH else ServoState.LOW
 	}

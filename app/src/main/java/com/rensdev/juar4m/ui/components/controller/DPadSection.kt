@@ -1,6 +1,5 @@
 package com.rensdev.juar4m.ui.components.controller
 
-import android.content.Context
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -40,17 +39,14 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.DpSize
-import com.rensdev.juar4m.utils.getVibrator
-import com.rensdev.juar4m.utils.vibrateClick
-import com.rensdev.juar4m.utils.vibrateWeakContinuous
+import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.utils.VibrationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class DPadController(context: Context, private val scope: CoroutineScope) {
-	private val vibrator = context.getVibrator()
+class DPadController(private val vibrator: VibrationManager?, private val scope: CoroutineScope) {
 	private var parentCoordinates: LayoutCoordinates? = null
 	private val componentBounds = mutableMapOf<String, Rect>()
 
@@ -79,7 +75,7 @@ class DPadController(context: Context, private val scope: CoroutineScope) {
 
 			if (startKey != null && startKey.startsWith("NUDGE")) {
 				activeKey = "STOP"
-				vibrator.cancel()
+				vibrator?.cancel()
 				triggerNudge(startKey)
 
 				do {
@@ -94,11 +90,11 @@ class DPadController(context: Context, private val scope: CoroutineScope) {
 					if (hitKey != null && !hitKey.startsWith("NUDGE")) {
 						if (activeKey != hitKey) {
 							activeKey = hitKey
-							vibrator.vibrateWeakContinuous()
+							vibrator?.weakContinuous()
 						}
 					} else {
 						activeKey = "STOP"
-						vibrator.cancel()
+						vibrator?.cancel()
 					}
 				}
 
@@ -114,12 +110,12 @@ class DPadController(context: Context, private val scope: CoroutineScope) {
 			}
 
 			activeKey = "STOP"
-			vibrator.cancel()
+			vibrator?.cancel()
 		}
 	}
 
 	private fun triggerNudge(key: String) {
-		vibrator.vibrateClick()
+		vibrator?.click()
 		scope.launch {
 			activeNudge = key
 			delay(ControllerUI.NUDGE_FLASH_DURATION_MILLIS)
@@ -129,10 +125,9 @@ class DPadController(context: Context, private val scope: CoroutineScope) {
 }
 
 @Composable
-fun rememberDPadController(): DPadController {
-	val context = LocalContext.current
+fun rememberDPadController(vibrator: VibrationManager?): DPadController {
 	val scope = rememberCoroutineScope()
-	return remember { DPadController(context, scope) }
+	return remember { DPadController(vibrator, scope) }
 }
 
 
@@ -146,8 +141,9 @@ fun Modifier.dpadTag(controller: DPadController, key: String): Modifier =
 
 
 @Composable
-fun DPadSection(modifier: Modifier = Modifier) {
-	val controller = rememberDPadController()
+fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
+	val vibrator = viewModel?.vibrationManager
+	val controller = rememberDPadController(vibrator)
 
 	Box(
 		modifier = modifier

@@ -65,6 +65,10 @@ fun MainContent(
 
 	val snackbarHostState = remember { SnackbarHostState() }
 
+	val disconnectLock by (viewModel?.disconnectLock ?: flowOf(true)).collectAsState(
+		initial = true
+	)
+
 	LaunchedEffect(viewModel) {
 		viewModel?.userMessages?.collectLatest {
 			withTimeoutOrNull(1250) {
@@ -105,6 +109,7 @@ fun MainContent(
 							.fillMaxSize()
 					)
 					DPadSection(
+						viewModel = viewModel,
 						modifier = Modifier
 							.weight(1f)
 							.fillMaxSize()
@@ -112,7 +117,7 @@ fun MainContent(
 				}
 
 //				Disabled overlay
-				if (_bluetoothStatus != BluetoothStatus.Connected) {
+				if (disconnectLock && (_bluetoothStatus != BluetoothStatus.Connected)) {
 					Box(
 						modifier = Modifier
 							.fillMaxSize()

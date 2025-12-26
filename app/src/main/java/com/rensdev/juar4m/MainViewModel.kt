@@ -8,6 +8,7 @@ import com.rensdev.juar4m.bluetooth.BluetoothController
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
 import com.rensdev.juar4m.ui.components.controller.ServoState
 import com.rensdev.juar4m.ui.components.controller.ToggleServoDefaults
+import com.rensdev.juar4m.utils.VibrationManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,10 +18,21 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+	///////////////////////// VIBRATOR //////////////////////////
+	val vibrationManager = VibrationManager(application.applicationContext)
+
+	init {
+		viewModelScope.launch {
+			userPreferences.vibrationsEnabled.collect { isEnabled ->
+				vibrationManager.enabled = isEnabled
+			}
+		}
+	}
+
+
 	///////////////////////// SNACKBAR //////////////////////////
 	data class UserMessage(
-		val message: String,
-		val withDismissAction: Boolean
+		val message: String, val withDismissAction: Boolean
 	)
 
 	private val _userMessages = Channel<UserMessage>()
@@ -30,8 +42,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope.launch {
 			_userMessages.send(
 				UserMessage(
-					message = message,
-					withDismissAction = withDismissAction
+					message = message, withDismissAction = withDismissAction
 				)
 			)
 		}
@@ -56,24 +67,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		}
 	}
 
-	val timerModeEnabled = userPreferences.timerModeEnabled
+	val disconnectLock = userPreferences.disconnectLock
 
-	fun saveTimerModeEnabled(enabled: Boolean) {
+	fun saveDisconnectLock(enabled: Boolean) {
 		viewModelScope.launch {
-			userPreferences.saveTimerModeEnabled(enabled)
+			userPreferences.saveDisconnectLock(enabled)
+		}
+	}
+
+	val stopwatchModeEnabled = userPreferences.stopwatchModeEnabled
+
+	fun saveStopwatchModeEnabled(enabled: Boolean) {
+		viewModelScope.launch {
+			userPreferences.saveStopwatchModeEnabled(enabled)
 		}
 	}
 
 	// Servo A Preferences
-	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange
-		.stateIn(
+	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange.stateIn(
 			viewModelScope,
 			SharingStarted.WhileSubscribed(5000),
 			ToggleServoDefaults.servoA.range // Initial value
 		)
 
-	val servoAState: StateFlow<ServoState> = userPreferences.servoAState
-		.stateIn(
+	val servoAState: StateFlow<ServoState> = userPreferences.servoAState.stateIn(
 			viewModelScope,
 			SharingStarted.WhileSubscribed(5000),
 			ToggleServoDefaults.servoA.state // Initial value
@@ -92,15 +109,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	}
 
 	// Servo B Preferences
-	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange
-		.stateIn(
+	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange.stateIn(
 			viewModelScope,
 			SharingStarted.WhileSubscribed(5000),
 			ToggleServoDefaults.servoB.range // Initial value
 		)
 
-	val servoBState: StateFlow<ServoState> = userPreferences.servoBState
-		.stateIn(
+	val servoBState: StateFlow<ServoState> = userPreferences.servoBState.stateIn(
 			viewModelScope,
 			SharingStarted.WhileSubscribed(5000),
 			ToggleServoDefaults.servoB.state // Initial value

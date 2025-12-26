@@ -1,7 +1,5 @@
 package com.rensdev.juar4m.ui.components.controller
 
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -68,8 +66,7 @@ import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.ui.theme.Typography
 import com.rensdev.juar4m.ui.theme.White
-import com.rensdev.juar4m.utils.getVibrator
-import com.rensdev.juar4m.utils.vibrateClick
+import com.rensdev.juar4m.utils.VibrationManager
 import kotlin.math.roundToInt
 
 enum class ServoState { LOW, HIGH }
@@ -120,8 +117,7 @@ fun servoLabel(name: String): AnnotatedString {
 
 @Composable
 fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
-	val context = LocalContext.current
-	val vibrator = context.getVibrator()
+	val vibrator = viewModel?.vibrationManager
 	var isEditingRanges by remember { mutableStateOf(false) }
 
 	val storedRangeA by viewModel?.servoARange?.collectAsState(ToggleServoDefaults.servoA.range)
@@ -161,12 +157,12 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				ToggleServoButton(label = servoALabel, servo = servoA, onToggle = {
 					val newState = if (servoA.state == ServoState.LOW) ServoState.HIGH else ServoState.LOW
 					viewModel?.saveServoAState(newState)
-					vibrator.vibrateClick()
+					vibrator?.click()
 				})
 				ToggleServoButton(label = servoBLabel, servo = servoB, onToggle = {
 					val newState = if (servoB.state == ServoState.LOW) ServoState.HIGH else ServoState.LOW
 					viewModel?.saveServoBState(newState)
-					vibrator.vibrateClick()
+					vibrator?.click()
 				})
 			}
 
@@ -192,7 +188,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 			if (isEditingRanges) {
 				Button(
 					onClick = {
-						vibrator.vibrateClick()
+						vibrator?.click()
 						editRangeA = ToggleServoDefaults.servoA.range
 						editRangeB = ToggleServoDefaults.servoB.range
 					}, colors = ButtonDefaults.buttonColors(
@@ -202,20 +198,16 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 					Text("Reset to defaults")
 				}
 			}
-			EditServoRangeButton(
-				isEditingRanges = isEditingRanges,
-				viewModel = viewModel,
-				onEdit = {
-					isEditingRanges = !isEditingRanges
-					vibrator.vibrateClick()
-				},
-				onSave = {
-					viewModel?.saveServoARange(editRangeA)
-					viewModel?.saveServoBRange(editRangeB)
+			EditServoRangeButton(isEditingRanges = isEditingRanges, viewModel = viewModel, onEdit = {
+				isEditingRanges = !isEditingRanges
+				vibrator?.click()
+			}, onSave = {
+				viewModel?.saveServoARange(editRangeA)
+				viewModel?.saveServoBRange(editRangeB)
 
-					isEditingRanges = !isEditingRanges
-					vibrator.vibrateClick()
-				})
+				isEditingRanges = !isEditingRanges
+				vibrator?.click()
+			})
 		}
 	}
 }
@@ -333,9 +325,8 @@ fun EditServoRangeButton(
 	val backgroundColor =
 		if (isEditingRanges) IconButtonDefaults.filledIconButtonColors().containerColor
 		else White.copy(alpha = 0.1f)
-	val contentColor =
-		if (isEditingRanges) IconButtonDefaults.filledIconButtonColors().contentColor
-		else White.copy(alpha = 0.8f)
+	val contentColor = if (isEditingRanges) IconButtonDefaults.filledIconButtonColors().contentColor
+	else White.copy(alpha = 0.8f)
 
 	Surface(
 		modifier = Modifier
@@ -347,10 +338,7 @@ fun EditServoRangeButton(
 					else viewModel?.showSnackbar("Long press to edit")
 				},
 				onLongClick = { onEdit() },
-			),
-		shape = CircleShape,
-		color = backgroundColor,
-		contentColor = contentColor
+			), shape = CircleShape, color = backgroundColor, contentColor = contentColor
 	) {
 		Box(contentAlignment = Alignment.Center) {
 			Icon(
@@ -417,7 +405,7 @@ fun ToggleServoRangeSliderThumb(color: Color, value: Float) {
 
 @Composable
 fun ServoCControls(
-	modifier: Modifier = Modifier, vibrator: Vibrator
+	modifier: Modifier = Modifier, vibrator: VibrationManager?
 ) {
 	var command by remember { mutableStateOf("RELEASED") }
 	val density = LocalDensity.current
@@ -463,11 +451,7 @@ fun ServoCControls(
 
 								if (command != newCommand) {
 									command = newCommand
-									if (command != "RELEASED") vibrator.vibrate(
-										VibrationEffect.createPredefined(
-											VibrationEffect.EFFECT_DOUBLE_CLICK
-										)
-									)
+									if (command != "RELEASED") vibrator?.doubleClick()
 								}
 							}
 

@@ -23,7 +23,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,13 +41,13 @@ import com.rensdev.juar4m.ui.components.BluetoothButton
 import com.rensdev.juar4m.ui.components.DndIndicator
 import com.rensdev.juar4m.ui.components.InfiniteMarquee
 import com.rensdev.juar4m.ui.components.MenuButton
+import com.rensdev.juar4m.ui.components.Stopwatch
 import com.rensdev.juar4m.ui.components.controller.DPadSection
 import com.rensdev.juar4m.ui.components.controller.ServoSection
 import com.rensdev.juar4m.ui.theme.GeistFontFamily
 import com.rensdev.juar4m.ui.theme.Theme
 import com.rensdev.juar4m.ui.theme.White
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withTimeoutOrNull
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -58,15 +57,12 @@ fun MainContent(
 	bluetoothStatus: BluetoothStatus? = null,
 	content: (@Composable () -> Unit)? = null
 ) {
+	val snackbarHostState = remember { SnackbarHostState() }
 	@Suppress("LocalVariableName") val _bluetoothStatus by viewModel?.bluetoothStatus.collectAsStateOrFallback(
 		bluetoothStatus ?: BluetoothStatus.Disconnected
 	)
-
-	val snackbarHostState = remember { SnackbarHostState() }
-
-	val disconnectLock by (viewModel?.disconnectLockEnabled ?: flowOf(true)).collectAsState(
-		initial = true
-	)
+	val disconnectLock by viewModel?.disconnectLockEnabled.collectAsStateOrFallback(true)
+	val stopwatchModeEnabled by viewModel?.stopwatchModeEnabled.collectAsStateOrFallback(true)
 
 	LaunchedEffect(viewModel) {
 		viewModel?.userMessages?.collectLatest {
@@ -88,8 +84,7 @@ fun MainContent(
 					.windowInsetsPadding(WindowInsets.displayCutout),
 			) { _ ->
 				InfiniteMarquee(
-					modifier = Modifier.align(Alignment.BottomCenter),
-					text = "JUARA!", textStyle = TextStyle(
+					modifier = Modifier.align(Alignment.BottomCenter), text = "JUARA!", textStyle = TextStyle(
 						color = White.copy(alpha = 0.1f),
 						fontFamily = GeistFontFamily,
 						fontWeight = FontWeight.Black,
@@ -108,8 +103,7 @@ fun MainContent(
 							.fillMaxSize()
 					)
 					DPadSection(
-						viewModel = viewModel,
-						modifier = Modifier
+						viewModel = viewModel, modifier = Modifier
 							.weight(1f)
 							.fillMaxSize()
 					)
@@ -133,8 +127,7 @@ fun MainContent(
 					verticalAlignment = Alignment.Top
 				) {
 					MenuButton(
-						modifier = Modifier,
-						viewModel = viewModel
+						modifier = Modifier, viewModel = viewModel
 					)
 					Row(
 						horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
@@ -153,6 +146,15 @@ fun MainContent(
 						.padding(top = 8.dp)
 				)
 
+				if (stopwatchModeEnabled) {
+					Stopwatch(
+						viewModel = viewModel,
+						modifier = Modifier
+							.align(Alignment.BottomCenter)
+							.fillMaxWidth()
+							.padding(16.dp, 24.dp)
+					)
+				}
 
 				content?.invoke()
 			}

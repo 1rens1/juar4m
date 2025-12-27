@@ -7,8 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.rensdev.juar4m.bluetooth.BluetoothController
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
 import com.rensdev.juar4m.command.CommandController
+import com.rensdev.juar4m.command.Commands
 import com.rensdev.juar4m.preferences.UserPreferences
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
+import com.rensdev.juar4m.stopwatch.StopwatchManager
 import com.rensdev.juar4m.ui.components.controller.ServoState
 import com.rensdev.juar4m.utils.VibrationManager
 import kotlinx.coroutines.CoroutineScope
@@ -140,10 +142,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	fun disconnectBluetooth() = bluetoothController.disconnect()
 	// fun sendBluetoothCommand(bytes: ByteArray) = bluetoothController.sendCommand(bytes)
 
+
+	///////////////////////// STOPWATCH /////////////////////////
+	val stopwatchManager = StopwatchManager(viewModelScope)
+
+	val stopwatchElapsed = stopwatchManager.elapsedMillis
+	val isStopwatchRunning = stopwatchManager.isRunning
+
+	fun finishStopwatch() {
+		stopwatchManager.stop()
+	}
+
+	fun resetStopwatch() {
+		stopwatchManager.reset()
+	}
+
 	//////////////////// COMMAND CONTROLLER /////////////////////
 	private val controllerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-	val commandController = CommandController(controllerScope) {
-		bluetoothController.sendCommand(it)
+	val commandController = CommandController(controllerScope) { bytes ->
+		bluetoothController.sendCommand(bytes)
+
+		if (stopwatchModeEnabled.value && !isStopwatchRunning.value) {
+			val low = bytes[0].toInt() and 0xFF
+			val high = bytes[1].toInt() and 0xFF
+			val command = (high shl 8) or low
+
+			if (command != Commands.STOP_MOTORS) {
+				stopwatchManager.onInputDetected()
+			}
+		}
 	}
 
 	init {
@@ -162,4 +189,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		super.onCleared()
 		commandController.stopTicker()
 	}
+
+
 }

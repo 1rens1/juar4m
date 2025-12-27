@@ -2,6 +2,7 @@ package com.rensdev.juar4m.ui.components.controller
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -20,14 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,7 +37,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -64,6 +61,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.preferences.UserPreferencesDefaults
+import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.theme.Typography
 import com.rensdev.juar4m.ui.theme.White
 import com.rensdev.juar4m.utils.VibrationManager
@@ -78,11 +77,6 @@ data class ToggleServo(
 	val state: ServoState,
 	val range: ClosedFloatingPointRange<Float> = 0f..180f,
 )
-
-object ToggleServoDefaults {
-	val servoA = ToggleServo(ServoState.LOW, range = 0f..90f)
-	val servoB = ToggleServo(ServoState.HIGH, range = 45f..180f)
-}
 
 fun ToggleServo.getValue(): Int {
 	return when (state) {
@@ -117,18 +111,16 @@ fun servoLabel(name: String): AnnotatedString {
 
 @Composable
 fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
-	val vibrator = viewModel?.vibrationManager
+	val vibrator = viewModel?.vibrator
+	val commandController = viewModel?.commandController
+
 	var isEditingRanges by remember { mutableStateOf(false) }
 
-	val storedRangeA by viewModel?.servoARange?.collectAsState(ToggleServoDefaults.servoA.range)
-		?: remember { mutableStateOf(ToggleServoDefaults.servoA.range) }
-	val storedStateA by viewModel?.servoAState?.collectAsState(ToggleServoDefaults.servoA.state)
-		?: remember { mutableStateOf(ToggleServoDefaults.servoA.state) }
+	val storedRangeA by viewModel?.servoARange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_RANGE)
+	val storedStateA by viewModel?.servoAState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_STATE)
 
-	val storedRangeB by viewModel?.servoBRange?.collectAsState(ToggleServoDefaults.servoB.range)
-		?: remember { mutableStateOf(ToggleServoDefaults.servoB.range) }
-	val storedStateB by viewModel?.servoBState?.collectAsState(ToggleServoDefaults.servoB.state)
-		?: remember { mutableStateOf(ToggleServoDefaults.servoB.state) }
+	val storedRangeB by viewModel?.servoBRange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_RANGE)
+	val storedStateB by viewModel?.servoBState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_STATE)
 
 	var editRangeA by remember { mutableStateOf(storedRangeA) }
 	var editRangeB by remember { mutableStateOf(storedRangeB) }
@@ -153,23 +145,31 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 		Row(
 			horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top
 		) {
-			Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+			Column(
+				verticalArrangement = Arrangement.SpaceBetween,
+				modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
+			) {
 				ToggleServoButton(label = servoALabel, servo = servoA, onToggle = {
 					val newState = if (servoA.state == ServoState.LOW) ServoState.HIGH else ServoState.LOW
-					viewModel?.saveServoAState(newState)
+					viewModel?.setServoAState(newState)
 					vibrator?.click()
+					commandController?.setServo(1, servoA.copy(state = newState).getValue())
 				})
 				ToggleServoButton(label = servoBLabel, servo = servoB, onToggle = {
 					val newState = if (servoB.state == ServoState.LOW) ServoState.HIGH else ServoState.LOW
-					viewModel?.saveServoBState(newState)
+					viewModel?.setServoBState(newState)
 					vibrator?.click()
+					commandController?.setServo(2, servoB.copy(state = newState).getValue())
 				})
 			}
 
 			if (!isEditingRanges) {
 				ServoCControls(vibrator = vibrator)
 			} else {
-				Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+				Column(
+					verticalArrangement = Arrangement.spacedBy(8.dp),
+					modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
+				) {
 					ToggleServoRangeSlider(servo = servoA, label = servoALabel, onValueChange = {
 						editRangeA = it
 					})
@@ -183,27 +183,40 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 
 		Row(
 			horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End),
+			verticalAlignment = Alignment.CenterVertically,
 			modifier = Modifier.fillMaxWidth()
 		) {
 			if (isEditingRanges) {
-				Button(
-					onClick = {
-						vibrator?.click()
-						editRangeA = ToggleServoDefaults.servoA.range
-						editRangeB = ToggleServoDefaults.servoB.range
-					}, colors = ButtonDefaults.buttonColors(
-						contentColor = White, containerColor = White.copy(alpha = 0.1f)
-					)
+				Surface(
+					modifier = Modifier
+						.height(ButtonDefaults.MinHeight)
+						.clip(RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS))
+						.clickable {
+							vibrator?.click()
+							editRangeA = UserPreferencesDefaults.SERVO_A_RANGE
+							editRangeB = UserPreferencesDefaults.SERVO_B_RANGE
+						},
+					shape = ButtonDefaults.shape,
+					color = White.copy(alpha = 0.1f),
+					contentColor = White
 				) {
-					Text("Reset to defaults")
+					Box(
+						modifier = Modifier.padding(ButtonDefaults.ContentPadding),
+						contentAlignment = Alignment.Center
+					) {
+						Text(
+							text = "Reset to defaults",
+							style = Typography.labelLarge
+						)
+					}
 				}
 			}
 			EditServoRangeButton(isEditingRanges = isEditingRanges, viewModel = viewModel, onEdit = {
 				isEditingRanges = !isEditingRanges
 				vibrator?.click()
 			}, onSave = {
-				viewModel?.saveServoARange(editRangeA)
-				viewModel?.saveServoBRange(editRangeB)
+				viewModel?.setServoARange(editRangeA)
+				viewModel?.setServoBRange(editRangeB)
 
 				isEditingRanges = !isEditingRanges
 				vibrator?.click()
@@ -330,15 +343,18 @@ fun EditServoRangeButton(
 
 	Surface(
 		modifier = Modifier
-			.size(40.dp)
-			.clip(CircleShape)
+			.size(ButtonDefaults.MinHeight)
+			.clip(IconButtonDefaults.filledShape)
 			.combinedClickable(
 				onClick = {
 					if (isEditingRanges) onSave()
 					else viewModel?.showSnackbar("Long press to edit")
 				},
 				onLongClick = { onEdit() },
-			), shape = CircleShape, color = backgroundColor, contentColor = contentColor
+			),
+		shape = IconButtonDefaults.filledShape,
+		color = backgroundColor,
+		contentColor = contentColor
 	) {
 		Box(contentAlignment = Alignment.Center) {
 			Icon(
@@ -412,73 +428,71 @@ fun ServoCControls(
 	val buttonSize = ControllerUI.BUTTON_SIZE
 	val servoCLabel = remember { servoLabel("C") }
 
-	Column(horizontalAlignment = Alignment.CenterHorizontally) {
 //		Text(text = command, style = Typography.bodySmall)
-		Row(
-			modifier = modifier.height(buttonSize * 2.4f),
-			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(8.dp)
-		) {
-			Text(
-				text = servoCLabel,
-				modifier = Modifier
-					.vertical()
-					.rotate(-90f)
-					.alpha(0.5f),
-				textAlign = TextAlign.Center,
-				style = Typography.labelLarge
-			)
-			Column(
-				verticalArrangement = Arrangement.SpaceBetween,
-				modifier = Modifier
-					.fillMaxHeight()
-					.pointerInput(Unit) {
-						val btnPx = with(density) { buttonSize.toPx() }
-						awaitEachGesture {
-							val down = awaitFirstDown()
-							val width = size.width.toFloat()
-							val height = size.height.toFloat()
+	Row(
+		modifier = modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT),
+		verticalAlignment = Alignment.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(8.dp)
+	) {
+		Text(
+			text = servoCLabel,
+			modifier = Modifier
+				.vertical()
+				.rotate(-90f)
+				.alpha(0.5f),
+			textAlign = TextAlign.Center,
+			style = Typography.labelLarge
+		)
+		Column(
+			verticalArrangement = Arrangement.SpaceBetween,
+			modifier = Modifier
+				.fillMaxHeight()
+				.pointerInput(Unit) {
+					val btnPx = with(density) { buttonSize.toPx() }
+					awaitEachGesture {
+						val down = awaitFirstDown()
+						val width = size.width.toFloat()
+						val height = size.height.toFloat()
 
-							val topBounds = Rect(0f, 0f, width, btnPx)
-							val btmBounds = Rect(0f, height - btnPx, width, height)
+						val topBounds = Rect(0f, 0f, width, btnPx)
+						val btmBounds = Rect(0f, height - btnPx, width, height)
 
-							fun updateCommand(pos: Offset) {
-								val newCommand = when {
-									topBounds.contains(pos) -> "UP"
-									btmBounds.contains(pos) -> "DOWN"
-									else -> "RELEASED"
-								}
-
-								if (command != newCommand) {
-									command = newCommand
-									if (command != "RELEASED") vibrator?.doubleClick()
-								}
+						fun updateCommand(pos: Offset) {
+							val newCommand = when {
+								topBounds.contains(pos) -> "UP"
+								btmBounds.contains(pos) -> "DOWN"
+								else -> "RELEASED"
 							}
 
-							updateCommand(down.position)
-
-							do {
-								val event = awaitPointerEvent()
-								updateCommand(event.changes.first().position)
-							} while (event.changes.any { it.pressed })
-
-							if (command != "RELEASED") {
-								command = "RELEASED"
-//								vibrator.cancel()
+							if (command != newCommand) {
+								command = newCommand
+								if (command != "RELEASED") vibrator?.strongClick()
 							}
 						}
-					}) {
-				ServoCButton(
-					color = ControllerUI.SERVO_C_UP_COLOR,
-					iconImageVector = Icons.Default.ArrowDropUp,
-					isActive = command == "UP"
-				)
-				ServoCButton(
-					color = ControllerUI.SERVO_C_DOWN_COLOR,
-					iconImageVector = Icons.Default.ArrowDropDown,
-					isActive = command == "DOWN"
-				)
-			}
+
+						updateCommand(down.position)
+
+						do {
+							val event = awaitPointerEvent()
+							updateCommand(event.changes.first().position)
+						} while (event.changes.any { it.pressed })
+
+						if (command != "RELEASED") {
+							command = "RELEASED"
+//								vibrator.cancel()
+						}
+					}
+				}) {
+			ServoCButton(
+				color = ControllerUI.SERVO_C_UP_COLOR,
+				iconImageVector = Icons.Default.ArrowDropUp,
+				isActive = command == "UP"
+			)
+			ServoCButton(
+				color = ControllerUI.SERVO_C_DOWN_COLOR,
+				iconImageVector = Icons.Default.ArrowDropDown,
+				isActive = command == "DOWN"
+			)
 		}
 	}
 }

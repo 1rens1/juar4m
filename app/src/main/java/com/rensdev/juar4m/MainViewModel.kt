@@ -6,45 +6,35 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rensdev.juar4m.bluetooth.BluetoothController
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
+import com.rensdev.juar4m.command.CommandController
+import com.rensdev.juar4m.preferences.UserPreferences
+import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.ui.components.controller.ServoState
-import com.rensdev.juar4m.ui.components.controller.ToggleServoDefaults
 import com.rensdev.juar4m.utils.VibrationManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+@Suppress("KotlinConstantConditions")
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-	///////////////////////// VIBRATOR //////////////////////////
-	val vibrationManager = VibrationManager(application.applicationContext)
-
-	init {
-		viewModelScope.launch {
-			userPreferences.vibrationsEnabled.collect { isEnabled ->
-				vibrationManager.enabled = isEnabled
-			}
-		}
-	}
-
-
 	///////////////////////// SNACKBAR //////////////////////////
-	data class UserMessage(
-		val message: String, val withDismissAction: Boolean
-	)
+	data class UserMessage(val message: String, val withDismissAction: Boolean)
 
 	private val _userMessages = Channel<UserMessage>()
 	val userMessages = _userMessages.receiveAsFlow()
 
 	fun showSnackbar(message: String, withDismissAction: Boolean = false) {
 		viewModelScope.launch {
-			_userMessages.send(
-				UserMessage(
-					message = message, withDismissAction = withDismissAction
-				)
-			)
+			_userMessages.send(UserMessage(message, withDismissAction))
 		}
 	}
 
@@ -52,85 +42,83 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	private val userPreferences = UserPreferences(application)
 
 	val lastDeviceAddress = userPreferences.lastDeviceAddress
-
-	fun saveLastDeviceAddress(name: String?) {
-		viewModelScope.launch {
-			userPreferences.saveLastDeviceAddress(name)
-		}
+	fun setLastDeviceAddress(address: String?) = viewModelScope.launch {
+		userPreferences.setLastDeviceAddress(address)
 	}
 
-	val vibrationsEnabled = userPreferences.vibrationsEnabled
-
-	fun saveVibrationsEnabled(enabled: Boolean) {
-		viewModelScope.launch {
-			userPreferences.saveVibrationsEnabled(enabled)
-		}
+	private val _vibrationsEnabled = MutableStateFlow(UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)
+	val vibrationsEnabled = _vibrationsEnabled.asStateFlow()
+	fun setVibrationsEnabled(enabled: Boolean) {
+		_vibrationsEnabled.value = enabled
 	}
 
-	val disconnectLock = userPreferences.disconnectLock
-
-	fun saveDisconnectLock(enabled: Boolean) {
-		viewModelScope.launch {
-			userPreferences.saveDisconnectLock(enabled)
-		}
+	private val _disconnectLockEnabled =
+		MutableStateFlow(UserPreferencesDefaults.APP_DISCONNECT_LOCK_ENABLED)
+	val disconnectLockEnabled = _disconnectLockEnabled.asStateFlow()
+	fun setDisconnectLockEnabled(enabled: Boolean) {
+		_disconnectLockEnabled.value = enabled
 	}
 
-	val stopwatchModeEnabled = userPreferences.stopwatchModeEnabled
-
-	fun saveStopwatchModeEnabled(enabled: Boolean) {
-		viewModelScope.launch {
-			userPreferences.saveStopwatchModeEnabled(enabled)
-		}
+	private val _stopwatchModeEnabled =
+		MutableStateFlow(UserPreferencesDefaults.APP_STOPWATCH_MODE_ENABLED)
+	val stopwatchModeEnabled = _stopwatchModeEnabled.asStateFlow()
+	fun setStopwatchModeEnabled(enabled: Boolean) {
+		_stopwatchModeEnabled.value = enabled
 	}
 
-	// Servo A Preferences
+
+	// val vibrationsEnabled = userPreferences.vibrationsEnabled
+	// fun setVibrationsEnabled(enabled: Boolean) = viewModelScope.launch {
+	// 	userPreferences.setVibrationsEnabled(enabled)
+	// }
+	//
+	// val disconnectLockEnabled = userPreferences.disconnectLockEnabled
+	// fun setDisconnectLockEnabled(enabled: Boolean) = viewModelScope.launch {
+	// 	userPreferences.setDisconnectLockEnabled(enabled)
+	// }
+	//
+	// val stopwatchModeEnabled = userPreferences.stopwatchModeEnabled
+	// fun setStopwatchModeEnabled(enabled: Boolean) = viewModelScope.launch {
+	// 	userPreferences.setStopwatchModeEnabled(enabled)
+	// }
+
+	// Servo A
 	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange.stateIn(
-			viewModelScope,
-			SharingStarted.WhileSubscribed(5000),
-			ToggleServoDefaults.servoA.range // Initial value
-		)
-
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_RANGE
+	)
 	val servoAState: StateFlow<ServoState> = userPreferences.servoAState.stateIn(
-			viewModelScope,
-			SharingStarted.WhileSubscribed(5000),
-			ToggleServoDefaults.servoA.state // Initial value
-		)
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_STATE
+	)
 
-	fun saveServoARange(range: ClosedFloatingPointRange<Float>) {
-		viewModelScope.launch {
-			userPreferences.saveServoARange(range)
-		}
+	fun setServoARange(range: ClosedFloatingPointRange<Float>) = viewModelScope.launch {
+		userPreferences.setServoARange(range)
 	}
 
-	fun saveServoAState(state: ServoState) {
-		viewModelScope.launch {
-			userPreferences.saveServoAState(state)
-		}
+	fun setServoAState(state: ServoState) = viewModelScope.launch {
+		userPreferences.setServoAState(state)
 	}
 
-	// Servo B Preferences
+	// Servo B
 	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange.stateIn(
-			viewModelScope,
-			SharingStarted.WhileSubscribed(5000),
-			ToggleServoDefaults.servoB.range // Initial value
-		)
-
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_RANGE
+	)
 	val servoBState: StateFlow<ServoState> = userPreferences.servoBState.stateIn(
-			viewModelScope,
-			SharingStarted.WhileSubscribed(5000),
-			ToggleServoDefaults.servoB.state // Initial value
-		)
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_STATE
+	)
 
-	fun saveServoBRange(range: ClosedFloatingPointRange<Float>) {
-		viewModelScope.launch {
-			userPreferences.saveServoBRange(range)
-		}
+	fun setServoBRange(range: ClosedFloatingPointRange<Float>) = viewModelScope.launch {
+		userPreferences.setServoBRange(range)
 	}
 
-	fun saveServoBState(state: ServoState) {
-		viewModelScope.launch {
-			userPreferences.saveServoBState(state)
-		}
+	fun setServoBState(state: ServoState) = viewModelScope.launch {
+		userPreferences.setServoBState(state)
+	}
+
+	///////////////////////// VIBRATOR //////////////////////////
+	val vibrator = VibrationManager(application.applicationContext)
+
+	init {
+		viewModelScope.launch { vibrationsEnabled.collect { vibrator.enabled = it } }
 	}
 
 	///////////////////////// BLUETOOTH /////////////////////////
@@ -141,22 +129,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	val connectedDevice: StateFlow<BluetoothDevice?> = bluetoothController.connectedDevice
 
 	fun connectToDevice(device: BluetoothDevice) {
-		saveLastDeviceAddress(device.address)
+		setLastDeviceAddress(device.address)
 		bluetoothController.connect(device)
 	}
 
 	suspend fun connectToLastDevice() {
-		val address = lastDeviceAddress.first()
-		if (address != null) {
-			bluetoothController.connectToAddress(address)
+		lastDeviceAddress.first()?.let { bluetoothController.connectToAddress(it) }
+	}
+
+	fun disconnectBluetooth() = bluetoothController.disconnect()
+	// fun sendBluetoothCommand(bytes: ByteArray) = bluetoothController.sendCommand(bytes)
+
+	//////////////////// COMMAND CONTROLLER /////////////////////
+	private val controllerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+	val commandController = CommandController(controllerScope) {
+		bluetoothController.sendCommand(it)
+	}
+
+	init {
+		viewModelScope.launch {
+			bluetoothStatus.collect { status ->
+				if (status == BluetoothStatus.Connected) {
+					commandController.start()
+				} else {
+					commandController.stopTicker()
+				}
+			}
 		}
 	}
 
-	fun disconnectBluetooth() {
-		bluetoothController.disconnect()
-	}
-
-	fun sendBluetoothCommand(bytes: ByteArray) {
-		bluetoothController.sendCommand(bytes)
+	override fun onCleared() {
+		super.onCleared()
+		commandController.stopTicker()
 	}
 }

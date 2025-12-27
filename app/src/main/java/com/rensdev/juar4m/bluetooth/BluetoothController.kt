@@ -8,6 +8,7 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,7 +60,7 @@ class BluetoothController(context: Context) {
 			try {
 				try {
 					socket?.close()
-				} catch (e: IOException) {
+				} catch (_: IOException) {
 				}
 
 				socket = device.createRfcommSocketToServiceRecord(
@@ -72,7 +73,7 @@ class BluetoothController(context: Context) {
 					// Monitor connection
 					monitorConnection()
 				}
-			} catch (e: IOException) {
+			} catch (_: IOException) {
 				if (isActive && shouldAutoReconnect && device == targetDevice) {
 					scheduleReconnect()
 				}
@@ -92,7 +93,7 @@ class BluetoothController(context: Context) {
 						throw IOException("Connection lost")
 					}
 				}
-			} catch (e: IOException) {
+			} catch (_: IOException) {
 				if (isActive && shouldAutoReconnect && targetDevice != null) {
 					_status.value = BluetoothStatus.Connecting
 					scheduleReconnect()
@@ -131,18 +132,25 @@ class BluetoothController(context: Context) {
 	private fun closeSocket() {
 		try {
 			socket?.close()
-		} catch (e: IOException) {
+		} catch (_: IOException) {
 		}
 		socket = null
 	}
 
+	private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
 	fun sendCommand(bytes: ByteArray) {
-		if (_status.value != BluetoothStatus.Connected || bytes.size != 2) return
-		CoroutineScope(Dispatchers.IO).launch {
-			try {
-				socket?.outputStream?.write(bytes)
-			} catch (e: IOException) {
-				// Don't disconnect here, let the monitor detect it
+		if (_status.value != BluetoothStatus.Connected) return
+		ioScope.launch {
+			synchronized(this) { // Simple locking to maintain order
+				try {
+					socket?.outputStream?.let { stream ->
+						stream.write(bytes)
+						stream.flush()
+					}
+				} catch (_: IOException) {
+					// Monitor will handle disconnection
+				}
 			}
 		}
 	}

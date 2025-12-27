@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,66 +36,81 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.DpSize
 import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.command.CommandController
+import com.rensdev.juar4m.command.Commands
 import com.rensdev.juar4m.utils.VibrationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class DPadController(private val vibrator: VibrationManager?, private val scope: CoroutineScope) {
+class DPadController(
+	private val commandController: CommandController?,
+	private val vibrator: VibrationManager?,
+	private val scope: CoroutineScope
+) {
 	private var parentCoordinates: LayoutCoordinates? = null
-	private val componentBounds = mutableMapOf<String, Rect>()
+	private val componentBounds = mutableMapOf<Int, Rect>()
 
-	var activeKey by mutableStateOf("STOP")
+	var activeKey by mutableIntStateOf(Commands.STOP_MOTORS)
 		private set
-	var activeNudge by mutableStateOf<String?>(null)
+
+	var activeNudge by mutableStateOf<Int?>(null)
 		private set
 
 	fun updateParentCoordinates(coordinates: LayoutCoordinates) {
 		parentCoordinates = coordinates
 	}
 
-	fun updateComponentBounds(key: String, coordinates: LayoutCoordinates) {
+	fun updateComponentBounds(command: Int, coordinates: LayoutCoordinates) {
 		val parent = parentCoordinates ?: return
 		if (!parent.isAttached) return
 		val topLeft = parent.localPositionOf(coordinates, Offset.Zero)
 		val size = coordinates.size
-		componentBounds[key] = Rect(topLeft, Size(size.width.toFloat(), size.height.toFloat()))
+		componentBounds[command] = Rect(topLeft, Size(size.width.toFloat(), size.height.toFloat()))
 	}
 
 	suspend fun processGestures(inputScope: PointerInputScope) {
 		inputScope.awaitEachGesture {
 			val down = awaitFirstDown()
 
-			val startKey = componentBounds.entries.firstOrNull { it.value.contains(down.position) }?.key
+			val startCommand =
+				componentBounds.entries.firstOrNull { it.value.contains(down.position) }?.key
 
-			if (startKey != null && startKey.startsWith("NUDGE")) {
-				activeKey = "STOP"
+			if (startCommand != null && isNudge(startCommand)) {
+				// Handle Nudge (Click)
+				activeKey = Commands.STOP_MOTORS
 				vibrator?.cancel()
-				triggerNudge(startKey)
+				commandController?.stop()
+				triggerNudge(startCommand)
 
+				// Wait for release
 				do {
 					val event = awaitPointerEvent()
 				} while (event.changes.any { it.pressed })
 
 			} else {
-
+				// Handle Drive (Drag)
 				fun processDPadLogic(position: Offset) {
-					val hitKey = componentBounds.entries.firstOrNull { it.value.contains(position) }?.key
+					val hitCommand = componentBounds.entries.firstOrNull { it.value.contains(position) }?.key
 
-					if (hitKey != null && !hitKey.startsWith("NUDGE")) {
-						if (activeKey != hitKey) {
-							activeKey = hitKey
+					if (hitCommand != null && !isNudge(hitCommand)) {
+						if (activeKey != hitCommand) {
+							activeKey = hitCommand
 							vibrator?.weakContinuous()
+							commandController?.drive(hitCommand) // Direct Int pass
 						}
 					} else {
-						activeKey = "STOP"
+						// Finger drifted off valid buttons
+						activeKey = Commands.STOP_MOTORS
 						vibrator?.cancel()
+						commandController?.stop()
 					}
 				}
 
@@ -109,25 +125,36 @@ class DPadController(private val vibrator: VibrationManager?, private val scope:
 				} while (event.changes.any { it.pressed })
 			}
 
-			activeKey = "STOP"
+			// Release
+			activeKey = Commands.STOP_MOTORS
 			vibrator?.cancel()
+			commandController?.stop()
 		}
 	}
 
-	private fun triggerNudge(key: String) {
+	private fun triggerNudge(command: Int) {
 		vibrator?.click()
+		commandController?.nudge(command)
 		scope.launch {
-			activeNudge = key
+			activeNudge = command
 			delay(ControllerUI.NUDGE_FLASH_DURATION_MILLIS)
-			if (activeNudge == key) activeNudge = null
+			if (activeNudge == command) activeNudge = null
 		}
+	}
+
+	private fun isNudge(command: Int): Boolean {
+		return command in Commands.NUDGE_FORWARD..Commands.NUDGE_SPIN_LEFT
 	}
 }
 
 @Composable
-fun rememberDPadController(vibrator: VibrationManager?): DPadController {
+fun rememberDPadController(viewModel: MainViewModel?): DPadController {
 	val scope = rememberCoroutineScope()
-	return remember { DPadController(vibrator, scope) }
+	val vibrator = viewModel?.vibrator
+	val commandController = viewModel?.commandController
+	return remember(vibrator, commandController) {
+		DPadController(commandController, vibrator, scope)
+	}
 }
 
 
@@ -136,14 +163,13 @@ fun Modifier.dpadController(controller: DPadController): Modifier =
 		.onGloballyPositioned { controller.updateParentCoordinates(it) }
 		.pointerInput(controller) { controller.processGestures(this) }
 
-fun Modifier.dpadTag(controller: DPadController, key: String): Modifier =
-	this.onGloballyPositioned { controller.updateComponentBounds(key, it) }
+fun Modifier.dpadTag(controller: DPadController, command: Int): Modifier =
+	this.onGloballyPositioned { controller.updateComponentBounds(command, it) }
 
 
 @Composable
 fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
-	val vibrator = viewModel?.vibrationManager
-	val controller = rememberDPadController(vibrator)
+	val controller = rememberDPadController(viewModel)
 
 	Box(
 		modifier = modifier
@@ -157,99 +183,61 @@ fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 		) {
 			NudgeButton(
 				orientation = Orientation.Horizontal,
-				isActive = controller.activeNudge == "NUDGE_UP",
-				modifier = Modifier.dpadTag(controller, "NUDGE_UP")
-			) {
-				Icon(
-					modifier = Modifier.size(ControllerUI.ICON_SIZE),
-					imageVector = Icons.Default.KeyboardDoubleArrowUp,
-					contentDescription = null
-				)
-			}
+				isActive = controller.activeNudge == Commands.NUDGE_FORWARD,
+				iconImageVector = Icons.Default.KeyboardDoubleArrowUp,
+				modifier = Modifier.dpadTag(controller, Commands.NUDGE_FORWARD)
+			)
 
 			DPadButton(
-				isActive = controller.activeKey == "UP", modifier = Modifier.dpadTag(controller, "UP")
-			) {
-				Icon(
-					modifier = Modifier.size(ControllerUI.ICON_SIZE),
-					imageVector = Icons.Default.ArrowUpward,
-					contentDescription = null
-				)
-			}
+				isActive = controller.activeKey == Commands.MOVE_FORWARD,
+				iconImageVector = Icons.Default.ArrowUpward,
+				modifier = Modifier.dpadTag(controller, Commands.MOVE_FORWARD)
+			)
 
 			Row(horizontalArrangement = Arrangement.spacedBy(ControllerUI.DPAD_GAP)) {
 				NudgeButton(
 					orientation = Orientation.Vertical,
-					isActive = controller.activeNudge == "NUDGE_LEFT",
-					modifier = Modifier.dpadTag(controller, "NUDGE_LEFT")
-				) {
-					Icon(
-						modifier = Modifier.size(ControllerUI.ICON_SIZE),
-						imageVector = Icons.Default.KeyboardDoubleArrowLeft,
-						contentDescription = null
-					)
-				}
+					isActive = controller.activeNudge == Commands.NUDGE_SPIN_LEFT,
+					iconImageVector = Icons.Default.KeyboardDoubleArrowLeft,
+					modifier = Modifier.dpadTag(controller, Commands.NUDGE_SPIN_LEFT)
+				)
 				DPadButton(
-					isActive = controller.activeKey == "LEFT", modifier = Modifier.dpadTag(controller, "LEFT")
-				) {
-					Icon(
-						modifier = Modifier.size(ControllerUI.ICON_SIZE),
-						imageVector = Icons.AutoMirrored.Default.ArrowBack,
-						contentDescription = null
-					)
-				}
+					isActive = controller.activeKey == Commands.SPIN_LEFT,
+					iconImageVector = Icons.AutoMirrored.Default.ArrowBack,
+					modifier = Modifier.dpadTag(controller, Commands.SPIN_LEFT)
+				)
 				Spacer(modifier = Modifier.size(ControllerUI.BUTTON_SIZE))
 				DPadButton(
-					isActive = controller.activeKey == "RIGHT",
-					modifier = Modifier.dpadTag(controller, "RIGHT")
-				) {
-					Icon(
-						modifier = Modifier.size(ControllerUI.ICON_SIZE),
-						imageVector = Icons.AutoMirrored.Default.ArrowForward,
-						contentDescription = null
-					)
-				}
+					isActive = controller.activeKey == Commands.SPIN_RIGHT,
+					iconImageVector = Icons.AutoMirrored.Default.ArrowForward,
+					modifier = Modifier.dpadTag(controller, Commands.SPIN_RIGHT)
+				)
 				NudgeButton(
 					orientation = Orientation.Vertical,
-					isActive = controller.activeNudge == "NUDGE_RIGHT",
-					modifier = Modifier.dpadTag(controller, "NUDGE_RIGHT")
-				) {
-					Icon(
-						modifier = Modifier.size(ControllerUI.ICON_SIZE),
-						imageVector = Icons.Default.KeyboardDoubleArrowRight,
-						contentDescription = null
-					)
-				}
+					isActive = controller.activeNudge == Commands.NUDGE_SPIN_RIGHT,
+					iconImageVector = Icons.Default.KeyboardDoubleArrowRight,
+					modifier = Modifier.dpadTag(controller, Commands.NUDGE_SPIN_RIGHT)
+				)
 			}
 
 			DPadButton(
-				isActive = controller.activeKey == "DOWN", modifier = Modifier.dpadTag(controller, "DOWN")
-			) {
-				Icon(
-					modifier = Modifier.size(ControllerUI.ICON_SIZE),
-					imageVector = Icons.Default.ArrowDownward,
-					contentDescription = null
-				)
-			}
-
+				isActive = controller.activeKey == Commands.MOVE_BACKWARD,
+				iconImageVector = Icons.Default.ArrowDownward,
+				modifier = Modifier.dpadTag(controller, Commands.MOVE_BACKWARD)
+			)
 			NudgeButton(
 				orientation = Orientation.Horizontal,
-				isActive = controller.activeNudge == "NUDGE_DOWN",
-				modifier = Modifier.dpadTag(controller, "NUDGE_DOWN")
-			) {
-				Icon(
-					modifier = Modifier.size(ControllerUI.ICON_SIZE),
-					imageVector = Icons.Default.KeyboardDoubleArrowDown,
-					contentDescription = null
-				)
-			}
+				isActive = controller.activeNudge == Commands.NUDGE_BACKWARD,
+				iconImageVector = Icons.Default.KeyboardDoubleArrowDown,
+				modifier = Modifier.dpadTag(controller, Commands.NUDGE_BACKWARD)
+			)
 		}
 	}
 }
 
 @Composable
 fun DPadButton(
-	modifier: Modifier = Modifier, isActive: Boolean = false, content: @Composable () -> Unit
+	modifier: Modifier = Modifier, isActive: Boolean = false, iconImageVector: ImageVector
 ) {
 	Surface(
 		modifier = modifier.size(ControllerUI.BUTTON_SIZE),
@@ -257,7 +245,13 @@ fun DPadButton(
 		contentColor = if (isActive) ControllerUI.DPAD_ACTIVE_CONTENT_COLOR else ControllerUI.DPAD_CONTENT_COLOR,
 		shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS)
 	) {
-		Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
+		Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+			Icon(
+				modifier = Modifier.size(ControllerUI.ICON_SIZE),
+				imageVector = iconImageVector,
+				contentDescription = null
+			)
+		}
 	}
 }
 
@@ -266,7 +260,7 @@ fun NudgeButton(
 	modifier: Modifier = Modifier,
 	orientation: Orientation,
 	isActive: Boolean = false,
-	content: @Composable () -> Unit
+	iconImageVector: ImageVector
 ) {
 	Surface(
 		modifier = modifier
@@ -286,6 +280,12 @@ fun NudgeButton(
 		contentColor = if (isActive) ControllerUI.NUDGE_ACTIVE_CONTENT_COLOR else ControllerUI.NUDGE_CONTENT_COLOR,
 		shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS)
 	) {
-		Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
+		Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+			Icon(
+				modifier = Modifier.size(ControllerUI.ICON_SIZE),
+				imageVector = iconImageVector,
+				contentDescription = null
+			)
+		}
 	}
 }

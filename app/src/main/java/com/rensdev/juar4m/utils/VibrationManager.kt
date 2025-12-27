@@ -5,6 +5,13 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class VibrationManager(context: Context) {
 	private val systemVibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -13,26 +20,56 @@ class VibrationManager(context: Context) {
 		@Suppress("DEPRECATION") context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 	}
 
+	private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+	private var loopJob: Job? = null
 	var enabled: Boolean = true
 
 	private val vibrator: Vibrator?
 		get() = if (enabled) systemVibrator else null
 
+	private fun oneShot(milliseconds: Long) {
+		vibrator?.vibrate(
+			VibrationEffect.createOneShot(
+				milliseconds, VibrationEffect.DEFAULT_AMPLITUDE
+			)
+		)
+	}
+
+	private var isHighPriorityActive = false
+
+	private fun oneShotHighPriority(duration: Long) {
+		isHighPriorityActive = true
+		oneShot(duration)
+		scope.launch {
+			delay(duration)
+			isHighPriorityActive = false
+		}
+	}
+
 	fun click() {
-		vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+		oneShotHighPriority(70)
+	}
+
+	fun strongClick() {
+		oneShotHighPriority(200)
 	}
 
 	fun weakContinuous() {
-		val timing = longArrayOf(0, 1000)
-		val amplitudes = intArrayOf(0, 40)
-		vibrator?.vibrate(VibrationEffect.createWaveform(timing, amplitudes, 0))
-	}
-
-	fun doubleClick() {
-		vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_DOUBLE_CLICK))
+		if (loopJob?.isActive == true) return
+		loopJob = scope.launch {
+			while (isActive) {
+				if (!isHighPriorityActive) {
+					oneShot(20)
+				}
+				delay(50)
+			}
+		}
 	}
 
 	fun cancel() {
+		loopJob?.cancel()
+		loopJob = null
+		isHighPriorityActive = false
 		systemVibrator.cancel()
 	}
 }

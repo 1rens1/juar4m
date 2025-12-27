@@ -2,7 +2,6 @@ package com.rensdev.juar4m.ui.components.controller
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.rensdev.juar4m.ui.theme.Black
 import com.rensdev.juar4m.ui.theme.Blue
 import com.rensdev.juar4m.ui.theme.Cyan
@@ -30,6 +29,7 @@ data object ControllerUI {
 	val NUDGE_ACTIVE_CONTENT_COLOR = White
 	const val NUDGE_FLASH_DURATION_MILLIS = 50L
 
+	val SERVO_CONTAINER_HEIGHT = BUTTON_SIZE * 2.6f
 	val SERVO_TOGGLE_LOW_COLOR = Cyan.copy(alpha = 0.5f)
 	val SERVO_TOGGLE_HIGH_COLOR = Magenta.copy(alpha = 0.5f)
 	val SERVO_TOGGLE_CONTENT_COLOR = White

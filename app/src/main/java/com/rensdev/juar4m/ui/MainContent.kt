@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
+import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.components.BatteryIndicator
 import com.rensdev.juar4m.ui.components.BluetoothButton
 import com.rensdev.juar4m.ui.components.DndIndicator
@@ -57,15 +58,13 @@ fun MainContent(
 	bluetoothStatus: BluetoothStatus? = null,
 	content: (@Composable () -> Unit)? = null
 ) {
-	@Suppress("LocalVariableName") val _bluetoothStatus by (viewModel?.bluetoothStatus ?: flowOf(
+	@Suppress("LocalVariableName") val _bluetoothStatus by viewModel?.bluetoothStatus.collectAsStateOrFallback(
 		bluetoothStatus ?: BluetoothStatus.Disconnected
-	)).collectAsState(
-		initial = bluetoothStatus ?: BluetoothStatus.Disconnected
 	)
 
 	val snackbarHostState = remember { SnackbarHostState() }
 
-	val disconnectLock by (viewModel?.disconnectLock ?: flowOf(true)).collectAsState(
+	val disconnectLock by (viewModel?.disconnectLockEnabled ?: flowOf(true)).collectAsState(
 		initial = true
 	)
 
@@ -186,6 +185,7 @@ fun MainContentPreview() {
 }
 
 //@Preview(widthDp = 960, heightDp = 580)
+@Suppress("unused")
 @Composable
 fun MainContentDisconnectedPreview() {
 	MainContent(bluetoothStatus = BluetoothStatus.Disconnected)

@@ -14,7 +14,6 @@ import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -37,7 +35,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.rensdev.juar4m.ui.MainContent
-import com.rensdev.juar4m.ui.theme.Blue
 import com.rensdev.juar4m.ui.theme.Cyan
 import kotlinx.coroutines.launch
 
@@ -228,7 +225,10 @@ private fun PermissionDeniedDialog(onOpenSettings: () -> Unit) {
 		title = { Text("Allow Bluetooth") },
 		text = { Text("Please allow Bluetooth in the settings.\n\nAllow in Permissions > Nearby devices.") },
 		confirmButton = {
-			TextButton(onClick = onOpenSettings, colors = ButtonDefaults.textButtonColors(containerColor = Cyan.copy(alpha=0.1f))) {
+			TextButton(
+				onClick = onOpenSettings,
+				colors = ButtonDefaults.textButtonColors(containerColor = Cyan.copy(alpha = 0.1f))
+			) {
 				Text("Open Settings")
 			}
 		})
@@ -241,7 +241,10 @@ private fun BluetoothDisabledDialog(onEnableBluetooth: () -> Unit) {
 		icon = { Icon(Icons.Default.BluetoothDisabled, contentDescription = null) },
 		title = { Text("Bluetooth Disabled") },
 		confirmButton = {
-			TextButton(onClick = onEnableBluetooth, colors = ButtonDefaults.textButtonColors(containerColor = Cyan.copy(alpha=0.1f))) {
+			TextButton(
+				onClick = onEnableBluetooth,
+				colors = ButtonDefaults.textButtonColors(containerColor = Cyan.copy(alpha = 0.1f))
+			) {
 				Text("Turn on Bluetooth")
 			}
 		})

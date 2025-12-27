@@ -5,17 +5,14 @@ import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.rensdev.juar4m.R
 
 
-//val provider = GoogleFont.Provider(
+// val provider = GoogleFont.Provider(
 //	providerAuthority = "com.google.android.gms.fonts",
 //	providerPackage = "com.google.android.gms",
 //	certificates = R.array.com_google_android_gms_fonts_certs
@@ -25,15 +22,51 @@ import com.rensdev.juar4m.R
 @OptIn(ExperimentalTextApi::class)
 fun createVariableFontFamily(fontResId: Int): FontFamily {
 	return FontFamily(
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(100)), weight = FontWeight.Thin),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(200)), weight = FontWeight.ExtraLight),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(300)), weight = FontWeight.Light),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(400)), weight = FontWeight.Normal),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(500)), weight = FontWeight.Medium),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(600)), weight = FontWeight.SemiBold),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(700)), weight = FontWeight.Bold),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(800)), weight = FontWeight.ExtraBold),
-		Font(fontResId, variationSettings = FontVariation.Settings(FontVariation.weight(900)), weight = FontWeight.Black),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(100)),
+			weight = FontWeight.Thin
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(200)),
+			weight = FontWeight.ExtraLight
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(300)),
+			weight = FontWeight.Light
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(400)),
+			weight = FontWeight.Normal
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(500)),
+			weight = FontWeight.Medium
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(600)),
+			weight = FontWeight.SemiBold
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(700)),
+			weight = FontWeight.Bold
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(800)),
+			weight = FontWeight.ExtraBold
+		),
+		Font(
+			fontResId,
+			variationSettings = FontVariation.Settings(FontVariation.weight(900)),
+			weight = FontWeight.Black
+		),
 	)
 }
 
@@ -41,9 +74,9 @@ val GeistFontFamily = createVariableFontFamily(R.font.geist_variable_wght)
 val GeistMonoFontFamily = createVariableFontFamily(R.font.geistmono_variable_wght)
 
 
-//val RubikFont = GoogleFont("Rubik")
+// val RubikFont = GoogleFont("Rubik")
 //
-//val RubikFontFamily = FontFamily(
+// val RubikFontFamily = FontFamily(
 //	Font(
 //		googleFont = RubikFont,
 //		fontProvider = provider

@@ -1,4 +1,9 @@
+import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.text.SimpleDateFormat
+import java.util.Date
+
+val appName = "JUAR4M"
 
 plugins {
 	alias(libs.plugins.android.application)
@@ -20,21 +25,24 @@ android {
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-		buildConfigField(
-			"long",
-			"BUILD_TIME",
-			System.currentTimeMillis().toString()
-		)
+		buildConfigField("long", "BUILD_TIME", System.currentTimeMillis().toString())
+	}
+
+	signingConfigs {
+		create("release") {
+			storeFile = file(System.getenv("KEYSTORE_FILE") ?: "$appName.local.jks")
+			storePassword = System.getenv("KEYSTORE_PASSWORD")
+			keyAlias = System.getenv("KEY_ALIAS")
+			keyPassword = System.getenv("KEY_PASSWORD")
+		}
 	}
 
 	buildTypes {
 		release {
 			isMinifyEnabled = true
 			isShrinkResources = true
-			proguardFiles(
-				getDefaultProguardFile("proguard-android-optimize.txt"),
-				"proguard-rules.pro"
-			)
+			proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+			signingConfig = signingConfigs.getByName("release")
 		}
 	}
 	compileOptions {
@@ -44,6 +52,20 @@ android {
 	buildFeatures {
 		compose = true
 		buildConfig = true
+	}
+}
+
+androidComponents {
+	onVariants { variant ->
+		variant.outputs.forEach { output ->
+			if (output is VariantOutputImpl) {
+				val type = variant.name
+				val version = output.versionName.get()
+				val date = SimpleDateFormat("yyyyMMdd").format(Date())
+
+				output.outputFileName = "$appName-${type}_${date}_v${version}.apk"
+			}
+		}
 	}
 }
 

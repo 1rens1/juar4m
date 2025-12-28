@@ -93,15 +93,18 @@ class MainActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
 		if (savedInstanceState != null) {
 			hasTriedAutoConnect = savedInstanceState.getBoolean("has_tried_connect", false)
 		}
+
 		setupWindow()
 
 		setContent {
 			LaunchedEffect(Unit) {
 				bluetoothSetup()
 			}
+
 			MainContent(viewModel) {
 				if (showPermissionDeniedDialog) PermissionDeniedDialog(onOpenSettings = ::openAppSettings)
 				if (showBluetoothDeniedDialog) BluetoothDisabledDialog(onEnableBluetooth = ::requestEnableBluetooth)
@@ -124,10 +127,9 @@ class MainActivity : ComponentActivity() {
 	override fun onResume() {
 		super.onResume()
 
-		if (!hasBluetoothPermissions()) {
-			showPermissionDeniedDialog = true
-		} else {
+		if (hasBluetoothPermissions()) {
 			showPermissionDeniedDialog = false
+
 			if (!isBluetoothEnabled()) {
 				showBluetoothDeniedDialog = true
 				hasTriedAutoConnect = false

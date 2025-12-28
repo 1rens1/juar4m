@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +38,29 @@ class BluetoothController(context: Context) {
 	private var targetDevice: BluetoothDevice? = null
 	private var shouldAutoReconnect = false
 
+	// Scope for IO operations (Sending/Receiving)
+	private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+	// Channel for thread-safe, ordered packet transmission
+	private val sendChannel = Channel<ByteArray>(Channel.UNLIMITED)
+
+	init {
+		// Dedicated coroutine to consume the channel
+		// This guarantees packets are sent in Order (FIFO) and never concurrently
+		ioScope.launch {
+			for (bytes in sendChannel) {
+				try {
+					socket?.outputStream?.apply {
+						write(bytes)
+						flush()
+					}
+				} catch (_: IOException) {
+					// The monitorConnection loop will handle the disconnection event
+				}
+			}
+		}
+	}
+
 	@SuppressLint("MissingPermission")
 	fun connect(device: BluetoothDevice) {
 		// Cancel any existing connections/reconnections
@@ -58,26 +82,35 @@ class BluetoothController(context: Context) {
 
 		connectionJob = CoroutineScope(Dispatchers.IO).launch {
 			try {
+				// Clean up previous socket if it exists
 				try {
 					socket?.close()
 				} catch (_: IOException) {
 				}
 
+				// Create new socket
 				socket = device.createRfcommSocketToServiceRecord(
 					UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 				)
 				socket?.connect()
 
+				// isActive works here because we are inside a 'launch' block
 				if (isActive && shouldAutoReconnect && device == targetDevice) {
 					_status.value = BluetoothStatus.Connected
 					// Monitor connection
 					monitorConnection()
 				}
 			} catch (_: IOException) {
-				if (isActive && shouldAutoReconnect && device == targetDevice) {
-					scheduleReconnect()
-				}
+				handleConnectionFailure(device)
+			} catch (_: SecurityException) {
+				handleConnectionFailure(device)
 			}
+		}
+	}
+
+	private fun handleConnectionFailure(device: BluetoothDevice) {
+		if (shouldAutoReconnect && device == targetDevice) {
+			scheduleReconnect()
 		}
 	}
 
@@ -105,8 +138,7 @@ class BluetoothController(context: Context) {
 	private fun scheduleReconnect() {
 		reconnectJob?.cancel()
 		reconnectJob = CoroutineScope(Dispatchers.IO).launch {
-			// Minimal delay for stability (50ms is very fast, adjust if needed)
-			delay(50)
+			delay(250)
 			if (isActive && shouldAutoReconnect && targetDevice != null) {
 				attemptConnection()
 			}
@@ -117,7 +149,11 @@ class BluetoothController(context: Context) {
 		shouldAutoReconnect = false
 		targetDevice = null
 		cancelAllJobs()
-		closeSocket()
+
+		CoroutineScope(Dispatchers.IO).launch {
+			closeSocket()
+		}
+
 		_status.value = BluetoothStatus.Disconnected
 		_connectedDevice.value = null
 	}
@@ -137,22 +173,9 @@ class BluetoothController(context: Context) {
 		socket = null
 	}
 
-	private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
 	fun sendCommand(bytes: ByteArray) {
 		if (_status.value != BluetoothStatus.Connected) return
-		ioScope.launch {
-			synchronized(this) { // Simple locking to maintain order
-				try {
-					socket?.outputStream?.let { stream ->
-						stream.write(bytes)
-						stream.flush()
-					}
-				} catch (_: IOException) {
-					// Monitor will handle disconnection
-				}
-			}
-		}
+		sendChannel.trySend(bytes)
 	}
 
 	@SuppressLint("MissingPermission")

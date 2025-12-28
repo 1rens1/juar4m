@@ -393,7 +393,7 @@ fun ToggleServoRangeSlider(
 		startThumb = {
 			ToggleServoRangeSliderThumb(
 				color = ControllerUI.SERVO_TOGGLE_LOW_COLOR, value = servo.range.start
-			) 
+			)
 		},
 		endThumb = {
 			ToggleServoRangeSliderThumb(

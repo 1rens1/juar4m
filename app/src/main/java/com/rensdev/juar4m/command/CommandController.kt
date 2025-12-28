@@ -15,6 +15,10 @@ class CommandController(
 	private val currentDriveState = AtomicInteger(Commands.STOP_MOTORS)
 
 	private var tickerJob: Job? = null
+	private var nudgeJob: Job? = null
+
+	@Volatile
+	private var pauseTicker = false
 
 	fun setServo(id: Int, angle: Int) {
 		val packed = 0x8000 or ((id and 0x7F) shl 8) or (angle and 0xFF)
@@ -30,17 +34,16 @@ class CommandController(
 	}
 
 	fun nudge(command: Int) {
-		scope.launch {
-			sendRaw(command)
+		nudgeJob?.cancel()
 
+		sendRaw(command)
+
+		nudgeJob = scope.launch {
 			pauseTicker = true
 			delay(60)
 			pauseTicker = false
 		}
 	}
-
-	@Volatile
-	private var pauseTicker = false
 
 	fun start() {
 		stopTicker()
@@ -49,13 +52,15 @@ class CommandController(
 				if (!pauseTicker) {
 					sendRaw(currentDriveState.get())
 				}
-				delay(50)
+				delay(20)
 			}
 		}
 	}
 
 	fun stopTicker() {
 		tickerJob?.cancel()
+		nudgeJob?.cancel()
+		pauseTicker = false
 	}
 
 	private fun sendRaw(command: Int) {

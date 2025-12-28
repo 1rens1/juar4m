@@ -22,6 +22,12 @@ class VibrationManager(context: Context) {
 
 	private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 	private var loopJob: Job? = null
+
+	private var priorityJob: Job? = null
+
+	@Volatile
+	private var isHighPriorityActive = false
+
 	var enabled: Boolean = true
 
 	private val vibrator: Vibrator?
@@ -35,12 +41,13 @@ class VibrationManager(context: Context) {
 		)
 	}
 
-	private var isHighPriorityActive = false
-
 	private fun oneShotHighPriority(duration: Long) {
+		priorityJob?.cancel()
+
 		isHighPriorityActive = true
 		oneShot(duration)
-		scope.launch {
+
+		priorityJob = scope.launch {
 			delay(duration)
 			isHighPriorityActive = false
 		}
@@ -56,8 +63,10 @@ class VibrationManager(context: Context) {
 
 	fun weakContinuous() {
 		if (loopJob?.isActive == true) return
+
 		loopJob = scope.launch {
 			while (isActive) {
+				// Only vibrate weak if a strong vibration isn't currently taking over
 				if (!isHighPriorityActive) {
 					oneShot(20)
 				}
@@ -69,6 +78,10 @@ class VibrationManager(context: Context) {
 	fun cancel() {
 		loopJob?.cancel()
 		loopJob = null
+
+		priorityJob?.cancel()
+		priorityJob = null
+
 		isHighPriorityActive = false
 		systemVibrator.cancel()
 	}

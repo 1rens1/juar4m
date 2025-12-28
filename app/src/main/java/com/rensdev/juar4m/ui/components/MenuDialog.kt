@@ -162,6 +162,7 @@ private fun AppInfo(modifier: Modifier = Modifier) {
 	Text(
 		"""
 		JUAR4M by @1rens1 (GitHub)
+		Logo by Jo
 		Version: $version
 		Build: $formattedBuildDate
 		""".trimIndent(),

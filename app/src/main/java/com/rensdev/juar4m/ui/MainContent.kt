@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
+import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.components.BatteryIndicator
 import com.rensdev.juar4m.ui.components.BluetoothButton
@@ -61,8 +62,12 @@ fun MainContent(
 	@Suppress("LocalVariableName") val _bluetoothStatus by viewModel?.bluetoothStatus.collectAsStateOrFallback(
 		bluetoothStatus ?: BluetoothStatus.Disconnected
 	)
-	val disconnectLock by viewModel?.disconnectLockEnabled.collectAsStateOrFallback(true)
-	val stopwatchModeEnabled by viewModel?.stopwatchModeEnabled.collectAsStateOrFallback(true)
+	val disconnectLock by viewModel?.disconnectLockEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_DISCONNECT_LOCK_ENABLED
+	)
+	val stopwatchModeEnabled by viewModel?.stopwatchModeEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_STOPWATCH_MODE_ENABLED
+	)
 
 	LaunchedEffect(viewModel) {
 		viewModel?.userMessages?.collectLatest {

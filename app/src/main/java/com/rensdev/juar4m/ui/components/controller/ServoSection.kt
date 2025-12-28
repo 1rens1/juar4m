@@ -40,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,7 +115,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	val vibrator = viewModel?.vibrator
 	val commandController = viewModel?.commandController
 
-	var isEditingRanges by remember { mutableStateOf(false) }
+	var isEditingRanges by rememberSaveable { mutableStateOf(false) }
 
 	val storedRangeA by viewModel?.servoARange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_RANGE)
 	val storedStateA by viewModel?.servoAState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_STATE)
@@ -392,7 +393,7 @@ fun ToggleServoRangeSlider(
 		startThumb = {
 			ToggleServoRangeSliderThumb(
 				color = ControllerUI.SERVO_TOGGLE_LOW_COLOR, value = servo.range.start
-			)
+			) 
 		},
 		endThumb = {
 			ToggleServoRangeSliderThumb(

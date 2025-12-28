@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -92,10 +93,15 @@ class MainActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		if (savedInstanceState != null) {
+			hasTriedAutoConnect = savedInstanceState.getBoolean("has_tried_connect", false)
+		}
 		setupWindow()
-		bluetoothSetup()
 
 		setContent {
+			LaunchedEffect(Unit) {
+				bluetoothSetup()
+			}
 			MainContent(viewModel) {
 				if (showPermissionDeniedDialog) PermissionDeniedDialog(onOpenSettings = ::openAppSettings)
 				if (showBluetoothDeniedDialog) BluetoothDisabledDialog(onEnableBluetooth = ::requestEnableBluetooth)
@@ -130,6 +136,11 @@ class MainActivity : ComponentActivity() {
 				tryAutoConnect()
 			}
 		}
+	}
+
+	override fun onSaveInstanceState(outState: Bundle) {
+		super.onSaveInstanceState(outState)
+		outState.putBoolean("has_tried_connect", hasTriedAutoConnect)
 	}
 
 	private fun setupWindow() {

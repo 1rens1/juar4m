@@ -1,7 +1,5 @@
 package com.rensdev.juar4m.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +11,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.stopwatch.formatStopwatch
 import com.rensdev.juar4m.ui.theme.Blue
@@ -33,8 +34,11 @@ import com.rensdev.juar4m.ui.theme.White
 
 @Composable
 fun Stopwatch(modifier: Modifier = Modifier, viewModel: MainViewModel?) {
-	val isStopwatchRunning by viewModel?.isStopwatchRunning.collectAsStateOrFallback(false)
-	val stopwatchElapsed by viewModel?.stopwatchElapsed.collectAsStateOrFallback(0)
+	val isStopwatchRunning by viewModel?.isStopwatchRunning.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_STOPWATCH_MODE_ENABLED
+	)
+	val stopwatchElapsed by viewModel?.stopwatchElapsed?.collectAsState()
+		?: remember { mutableLongStateOf(0L) }
 	val stopwatchElapsedFormatted = formatStopwatch(stopwatchElapsed)
 
 	var showFinishedDialog by remember { mutableStateOf(false) }

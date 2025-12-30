@@ -184,12 +184,10 @@ fun MainContent(
 				)
 			}
 		}
-
-
 	}
 }
 
-@Preview(widthDp = 960, heightDp = 580)
+@Preview(widthDp = 915, heightDp = 412)
 @Composable
 fun MainContentPreview() {
 	MainContent(bluetoothStatus = BluetoothStatus.Connected)

@@ -44,9 +44,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	private val userPreferences = UserPreferences(application)
 
 	val lastDeviceAddress = userPreferences.lastDeviceAddress
-	fun setLastDeviceAddress(address: String?) = viewModelScope.launch {
-		userPreferences.setLastDeviceAddress(address)
-	}
+	fun setLastDeviceAddress(address: String?) =
+		viewModelScope.launch { userPreferences.setLastDeviceAddress(address) }
 
 	private val _vibrationsEnabled = MutableStateFlow(UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)
 	val vibrationsEnabled = _vibrationsEnabled.asStateFlow()
@@ -92,13 +91,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_STATE
 	)
 
-	fun setServoARange(range: ClosedFloatingPointRange<Float>) = viewModelScope.launch {
-		userPreferences.setServoARange(range)
-	}
+	fun setServoARange(range: ClosedFloatingPointRange<Float>) =
+		viewModelScope.launch { userPreferences.setServoARange(range) }
 
-	fun setServoAState(state: ServoState) = viewModelScope.launch {
-		userPreferences.setServoAState(state)
-	}
+	fun setServoAState(state: ServoState) =
+		viewModelScope.launch { userPreferences.setServoAState(state) }
 
 	// Servo B
 	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange.stateIn(
@@ -108,13 +105,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_STATE
 	)
 
-	fun setServoBRange(range: ClosedFloatingPointRange<Float>) = viewModelScope.launch {
-		userPreferences.setServoBRange(range)
-	}
+	fun setServoBRange(range: ClosedFloatingPointRange<Float>) =
+		viewModelScope.launch { userPreferences.setServoBRange(range) }
 
-	fun setServoBState(state: ServoState) = viewModelScope.launch {
-		userPreferences.setServoBState(state)
-	}
+	fun setServoBState(state: ServoState) =
+		viewModelScope.launch { userPreferences.setServoBState(state) }
+
+	// Servo C
+	val servoCInverted: StateFlow<Boolean> = userPreferences.servoCInverted.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_INVERTED
+	)
+
+	fun setServoCInverted(inverted: Boolean) =
+		viewModelScope.launch { userPreferences.setServoCInverted(inverted) }
 
 	///////////////////////// VIBRATOR //////////////////////////
 	val vibrator = VibrationManager(application.applicationContext)

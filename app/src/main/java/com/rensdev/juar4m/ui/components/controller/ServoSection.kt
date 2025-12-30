@@ -34,6 +34,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -64,8 +67,10 @@ import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
+import com.rensdev.juar4m.ui.theme.Black
 import com.rensdev.juar4m.ui.theme.Typography
 import com.rensdev.juar4m.ui.theme.White
+import com.rensdev.juar4m.ui.theme.colorMix
 import com.rensdev.juar4m.utils.VibrationManager
 import kotlin.math.roundToInt
 
@@ -123,6 +128,8 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	val storedRangeB by viewModel?.servoBRange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_RANGE)
 	val storedStateB by viewModel?.servoBState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_STATE)
 
+	val servoCInverted by viewModel?.servoCInverted.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_INVERTED)
+
 	var editRangeA by remember { mutableStateOf(storedRangeA) }
 	var editRangeB by remember { mutableStateOf(storedRangeB) }
 
@@ -165,7 +172,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 			}
 
 			if (!isEditingRanges) {
-				ServoCControls(vibrator = vibrator)
+				ServoCControls(vibrator = vibrator, inverted = servoCInverted)
 			} else {
 				Column(
 					verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -188,6 +195,39 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 			modifier = Modifier.fillMaxWidth()
 		) {
 			if (isEditingRanges) {
+				Row(
+					verticalAlignment = Alignment.CenterVertically,
+					horizontalArrangement = Arrangement.spacedBy((-8).dp)
+				) {
+					Switch(
+						modifier = Modifier
+							.rotate(90f)
+							.scale(0.7f)
+							.height(ButtonDefaults.MinHeight)
+						,
+						checked = servoCInverted,
+						onCheckedChange = {
+							viewModel?.setServoCInverted(it)
+						},
+						thumbContent = {
+							Icon(
+								imageVector = Icons.Default.ArrowDropUp,
+								contentDescription = null,
+								modifier = Modifier.rotate(if (!servoCInverted) -90f else 90f),
+								tint = White
+							)
+						},
+						colors = SwitchDefaults.colors(
+							uncheckedTrackColor = ControllerUI.SERVO_C_DOWN_COLOR.copy(alpha = 0.15f),
+							checkedTrackColor = ControllerUI.SERVO_C_DOWN_COLOR.copy(alpha = 0.15f),
+							uncheckedThumbColor = colorMix(Black, ControllerUI.SERVO_C_UP_COLOR, 0.15f),
+							checkedThumbColor = colorMix(Black, ControllerUI.SERVO_C_UP_COLOR, 0.15f),
+							uncheckedBorderColor = White.copy(alpha = 0.15f),
+							checkedBorderColor = White.copy(alpha = 0.15f),
+						)
+					)
+					Text("Invert Servo C", style = Typography.labelMedium)
+				}
 				Surface(
 					modifier = Modifier
 						.height(ButtonDefaults.MinHeight)
@@ -196,6 +236,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 							vibrator?.click()
 							editRangeA = UserPreferencesDefaults.SERVO_A_RANGE
 							editRangeB = UserPreferencesDefaults.SERVO_B_RANGE
+							viewModel?.setServoCInverted(UserPreferencesDefaults.SERVO_C_INVERTED)
 						},
 					shape = ButtonDefaults.shape,
 					color = White.copy(alpha = 0.1f),
@@ -422,7 +463,7 @@ fun ToggleServoRangeSliderThumb(color: Color, value: Float) {
 
 @Composable
 fun ServoCControls(
-	modifier: Modifier = Modifier, vibrator: VibrationManager?
+	modifier: Modifier = Modifier, vibrator: VibrationManager?, inverted: Boolean = false
 ) {
 	var command by remember { mutableStateOf("RELEASED") }
 	val density = LocalDensity.current
@@ -448,6 +489,7 @@ fun ServoCControls(
 			verticalArrangement = Arrangement.SpaceBetween,
 			modifier = Modifier
 				.fillMaxHeight()
+				.rotate(if (inverted) 180f else 0f)
 				.pointerInput(Unit) {
 					val btnPx = with(density) { buttonSize.toPx() }
 					awaitEachGesture {

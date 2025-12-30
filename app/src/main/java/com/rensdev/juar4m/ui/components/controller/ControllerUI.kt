@@ -37,5 +37,4 @@ data object ControllerUI {
 
 	val SERVO_C_UP_COLOR = Red
 	val SERVO_C_DOWN_COLOR = Yellow
-
 }

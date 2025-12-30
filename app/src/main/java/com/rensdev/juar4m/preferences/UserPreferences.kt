@@ -29,6 +29,9 @@ class UserPreferences(private val context: Context) {
 		val SERVO_B_RANGE_LOW = floatPreferencesKey("servo.b.range_low")
 		val SERVO_B_RANGE_HIGH = floatPreferencesKey("servo.b.range_high")
 		val SERVO_B_STATE = booleanPreferencesKey("servo.b.state")
+
+		// Servo C
+		val SERVO_C_INVERTED = booleanPreferencesKey("servo.c.inverted")
 	}
 
 	private fun <T> get(key: Preferences.Key<T>, defaultValue: Nothing?) =
@@ -102,4 +105,8 @@ class UserPreferences(private val context: Context) {
 			prefs[SERVO_B_RANGE_HIGH] = range.endInclusive
 		}
 	}
+
+	// Servo C
+	val servoCInverted = get(SERVO_C_INVERTED, false)
+	suspend fun setServoCInverted(inverted: Boolean) = set(SERVO_C_INVERTED, inverted)
 }

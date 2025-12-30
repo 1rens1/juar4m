@@ -11,4 +11,5 @@ object UserPreferencesDefaults {
 	val SERVO_A_STATE = ServoState.LOW
 	val SERVO_B_RANGE = 0f..180f
 	val SERVO_B_STATE = ServoState.LOW
+	val SERVO_C_INVERTED = false
 }

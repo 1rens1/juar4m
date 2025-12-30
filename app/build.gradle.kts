@@ -10,6 +10,14 @@ plugins {
 	alias(libs.plugins.kotlin.compose)
 }
 
+val commitCount = providers.exec {
+	commandLine("git", "rev-list", "--count", "HEAD")
+}.standardOutput.asText.map { it.trim().toInt() }
+
+val commitHash = providers.exec {
+	commandLine("git", "rev-parse", "--short", "HEAD")
+}.standardOutput.asText.map { it.trim() }
+
 android {
 	namespace = "com.rensdev.juar4m"
 	compileSdk {
@@ -20,8 +28,8 @@ android {
 		applicationId = "com.rensdev.juar4m"
 		minSdk = 29
 		targetSdk = 36
-		versionCode = 1
-		versionName = "1.0"
+		versionCode = commitCount.get()
+		versionName = "1.1.0-${commitHash.get()}"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

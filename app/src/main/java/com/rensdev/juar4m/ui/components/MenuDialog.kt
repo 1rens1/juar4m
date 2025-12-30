@@ -175,7 +175,9 @@ private fun ToggleSetting(
 
 @Composable
 private fun AppInfo(modifier: Modifier = Modifier) {
-	val version = BuildConfig.VERSION_NAME
+	val versionName = BuildConfig.VERSION_NAME
+	val versionCode = BuildConfig.VERSION_CODE
+
 	val formattedBuildDate = try {
 		Instant.ofEpochMilli(BuildConfig.BUILD_TIME).atZone(ZoneId.systemDefault())
 			.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
@@ -187,7 +189,7 @@ private fun AppInfo(modifier: Modifier = Modifier) {
 		"""
 		JUAR4M by @1rens1 (GitHub)
 		Logo by Jo
-		Version: $version
+		Version: $versionName ($versionCode)
 		Build: $formattedBuildDate
 		""".trimIndent(),
 		style = Typography.bodySmall.copy(

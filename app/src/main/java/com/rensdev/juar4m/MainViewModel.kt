@@ -163,6 +163,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		stopwatchManager.reset()
 	}
 
+	val stopwatchPB = userPreferences.stopwatchPB
+	fun setStopwatchPB(pb: Long?) = viewModelScope.launch { userPreferences.setStopwatchPB(pb) }
+
 	//////////////////// COMMAND CONTROLLER /////////////////////
 	private val controllerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 	val commandController = CommandController(controllerScope) { bytes ->

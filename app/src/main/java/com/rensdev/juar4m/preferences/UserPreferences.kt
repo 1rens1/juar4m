@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rensdev.juar4m.ui.components.controller.ServoState
@@ -34,6 +35,9 @@ class UserPreferences(private val context: Context) {
 
 		// Servo C
 		val SERVO_C_INVERTED = booleanPreferencesKey("servo.c.inverted")
+
+		// Stopwatch
+		val STOPWATCH_PB = longPreferencesKey("stopwatch.pb")
 	}
 
 	private fun <T> get(key: Preferences.Key<T>, defaultValue: Nothing?) =
@@ -118,4 +122,7 @@ class UserPreferences(private val context: Context) {
 	// Servo C
 	val servoCInverted = get(SERVO_C_INVERTED, false)
 	suspend fun setServoCInverted(inverted: Boolean) = set(SERVO_C_INVERTED, inverted)
+
+	val stopwatchPB = get(STOPWATCH_PB, null)
+	suspend fun setStopwatchPB(pb: Long?) = set(STOPWATCH_PB, pb)
 }

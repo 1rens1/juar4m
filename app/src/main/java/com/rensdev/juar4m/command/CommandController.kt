@@ -34,12 +34,12 @@ class CommandController(
 	}
 
 	fun nudge(command: Int) {
+		pauseTicker = true
 		nudgeJob?.cancel()
 
 		sendRaw(command)
 
 		nudgeJob = scope.launch {
-			pauseTicker = true
 			delay(60)
 			pauseTicker = false
 		}
@@ -52,7 +52,7 @@ class CommandController(
 				if (!pauseTicker) {
 					sendRaw(currentDriveState.get())
 				}
-				delay(20)
+				delay(30)
 			}
 		}
 	}
@@ -65,6 +65,7 @@ class CommandController(
 
 	private fun sendRaw(command: Int) {
 		val bytes = byteArrayOf(
+			0xFF.toByte(), // Header
 			(command and 0xFF).toByte(),
 			((command shr 8) and 0xFF).toByte()
 		)

@@ -44,9 +44,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	private val userPreferences = UserPreferences(application)
 
 	val lastDeviceAddress = userPreferences.lastDeviceAddress
-	fun setLastDeviceAddress(address: String?) = viewModelScope.launch {
-		userPreferences.setLastDeviceAddress(address)
-	}
+	fun setLastDeviceAddress(address: String?) =
+		viewModelScope.launch { userPreferences.setLastDeviceAddress(address) }
 
 	private val _vibrationsEnabled = MutableStateFlow(UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)
 	val vibrationsEnabled = _vibrationsEnabled.asStateFlow()
@@ -68,7 +67,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		_stopwatchModeEnabled.value = enabled
 	}
 
-
+	val marqueeAnimationEnabled = userPreferences.marqueeAnimationEnabled
+	fun setMarqueeAnimationEnabled(enabled: Boolean) = viewModelScope.launch {
+		userPreferences.setMarqueeAnimationEnabled(enabled)
+	}
 	// val vibrationsEnabled = userPreferences.vibrationsEnabled
 	// fun setVibrationsEnabled(enabled: Boolean) = viewModelScope.launch {
 	// 	userPreferences.setVibrationsEnabled(enabled)
@@ -92,13 +94,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_STATE
 	)
 
-	fun setServoARange(range: ClosedFloatingPointRange<Float>) = viewModelScope.launch {
-		userPreferences.setServoARange(range)
-	}
+	fun setServoARange(range: ClosedFloatingPointRange<Float>) =
+		viewModelScope.launch { userPreferences.setServoARange(range) }
 
-	fun setServoAState(state: ServoState) = viewModelScope.launch {
-		userPreferences.setServoAState(state)
-	}
+	fun setServoAState(state: ServoState) =
+		viewModelScope.launch { userPreferences.setServoAState(state) }
 
 	// Servo B
 	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange.stateIn(
@@ -108,13 +108,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_STATE
 	)
 
-	fun setServoBRange(range: ClosedFloatingPointRange<Float>) = viewModelScope.launch {
-		userPreferences.setServoBRange(range)
-	}
+	fun setServoBRange(range: ClosedFloatingPointRange<Float>) =
+		viewModelScope.launch { userPreferences.setServoBRange(range) }
 
-	fun setServoBState(state: ServoState) = viewModelScope.launch {
-		userPreferences.setServoBState(state)
-	}
+	fun setServoBState(state: ServoState) =
+		viewModelScope.launch { userPreferences.setServoBState(state) }
+
+	// Servo C
+	val servoCInverted: StateFlow<Boolean> = userPreferences.servoCInverted.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_INVERTED
+	)
+
+	fun setServoCInverted(inverted: Boolean) =
+		viewModelScope.launch { userPreferences.setServoCInverted(inverted) }
 
 	///////////////////////// VIBRATOR //////////////////////////
 	val vibrator = VibrationManager(application.applicationContext)
@@ -157,14 +163,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		stopwatchManager.reset()
 	}
 
+	val stopwatchPB = userPreferences.stopwatchPB
+	fun setStopwatchPB(pb: Long?) = viewModelScope.launch { userPreferences.setStopwatchPB(pb) }
+
 	//////////////////// COMMAND CONTROLLER /////////////////////
 	private val controllerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 	val commandController = CommandController(controllerScope) { bytes ->
 		bluetoothController.sendCommand(bytes)
 
 		if (stopwatchModeEnabled.value && !isStopwatchRunning.value) {
-			val low = bytes[0].toInt() and 0xFF
-			val high = bytes[1].toInt() and 0xFF
+			val low = bytes[1].toInt() and 0xFF
+			val high = bytes[2].toInt() and 0xFF
 			val command = (high shl 8) or low
 
 			if (command != Commands.STOP_MOTORS) {

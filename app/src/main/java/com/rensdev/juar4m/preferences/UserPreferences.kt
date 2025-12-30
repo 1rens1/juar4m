@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rensdev.juar4m.ui.components.controller.ServoState
@@ -13,9 +14,11 @@ import kotlinx.coroutines.flow.map
 
 val Context.userPreferences: DataStore<Preferences> by preferencesDataStore("user_preferences")
 
+@Suppress("KotlinConstantConditions")
 class UserPreferences(private val context: Context) {
 	companion object {
 		val LAST_DEVICE_ADDRESS = stringPreferencesKey("bluetooth.last_device_address")
+		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
 		// val APP_VIBRATIONS_ENABLED = booleanPreferencesKey("app.vibrations_enabled")
 		// val APP_DISCONNECT_LOCK_ENABLED = booleanPreferencesKey("app.disconnect_lock_enabled")
 		// val APP_STOPWATCH_MODE_ENABLED = booleanPreferencesKey("app.stopwatch_mode_enabled")
@@ -29,6 +32,12 @@ class UserPreferences(private val context: Context) {
 		val SERVO_B_RANGE_LOW = floatPreferencesKey("servo.b.range_low")
 		val SERVO_B_RANGE_HIGH = floatPreferencesKey("servo.b.range_high")
 		val SERVO_B_STATE = booleanPreferencesKey("servo.b.state")
+
+		// Servo C
+		val SERVO_C_INVERTED = booleanPreferencesKey("servo.c.inverted")
+
+		// Stopwatch
+		val STOPWATCH_PB = longPreferencesKey("stopwatch.pb")
 	}
 
 	private fun <T> get(key: Preferences.Key<T>, defaultValue: Nothing?) =
@@ -49,6 +58,13 @@ class UserPreferences(private val context: Context) {
 
 	val lastDeviceAddress = get(LAST_DEVICE_ADDRESS, UserPreferencesDefaults.LAST_DEVICE_ADDRESS)
 	suspend fun setLastDeviceAddress(name: String?) = set(LAST_DEVICE_ADDRESS, name)
+
+	val marqueeAnimationEnabled =
+		get(APP_MARQUEE_ANIMATION_ENABLED, UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED)
+
+	suspend fun setMarqueeAnimationEnabled(enabled: Boolean) =
+		set(APP_MARQUEE_ANIMATION_ENABLED, enabled)
+
 	// MOVED TO MainViewModel.kt
 	// val vibrationsEnabled =
 	// 	get(APP_VIBRATIONS_ENABLED, UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)
@@ -102,4 +118,11 @@ class UserPreferences(private val context: Context) {
 			prefs[SERVO_B_RANGE_HIGH] = range.endInclusive
 		}
 	}
+
+	// Servo C
+	val servoCInverted = get(SERVO_C_INVERTED, false)
+	suspend fun setServoCInverted(inverted: Boolean) = set(SERVO_C_INVERTED, inverted)
+
+	val stopwatchPB = get(STOPWATCH_PB, null)
+	suspend fun setStopwatchPB(pb: Long?) = set(STOPWATCH_PB, pb)
 }

@@ -62,6 +62,9 @@ fun MainContent(
 	@Suppress("LocalVariableName") val _bluetoothStatus by viewModel?.bluetoothStatus.collectAsStateOrFallback(
 		bluetoothStatus ?: BluetoothStatus.Disconnected
 	)
+	val marqueeAnimationEnabled by viewModel?.marqueeAnimationEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED
+	)
 	val disconnectLock by viewModel?.disconnectLockEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_DISCONNECT_LOCK_ENABLED
 	)
@@ -94,9 +97,10 @@ fun MainContent(
 						fontFamily = GeistFontFamily,
 						fontWeight = FontWeight.Black,
 						fontStyle = FontStyle.Italic
-					)
+					),
+					playing = marqueeAnimationEnabled
 				)
-//				Controller Screen
+				// Controller Screen
 				Row(
 					modifier = Modifier
 						.fillMaxSize()
@@ -114,7 +118,7 @@ fun MainContent(
 					)
 				}
 
-//				Disabled overlay
+				// Disabled overlay
 				if (disconnectLock && (_bluetoothStatus != BluetoothStatus.Connected)) {
 					Box(
 						modifier = Modifier

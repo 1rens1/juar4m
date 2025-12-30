@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.BuildConfig
@@ -32,6 +33,7 @@ import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.components.controller.AnimatedSideDialog
 import com.rensdev.juar4m.ui.theme.ColorScheme
+import com.rensdev.juar4m.ui.theme.GeistMonoFontFamily
 import com.rensdev.juar4m.ui.theme.Red
 import com.rensdev.juar4m.ui.theme.Theme
 import com.rensdev.juar4m.ui.theme.Typography
@@ -44,6 +46,9 @@ import java.time.format.DateTimeFormatter
 fun MenuDialog(
 	viewModel: MainViewModel?, onDismissRequest: () -> Unit
 ) {
+	val marqueAnimationEnabled by viewModel?.marqueeAnimationEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED
+	)
 	val vibrationsEnabled by viewModel?.vibrationsEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_VIBRATIONS_ENABLED
 	)
@@ -63,7 +68,7 @@ fun MenuDialog(
 			color = ColorScheme.surfaceContainer
 		) {
 			Column(modifier = Modifier.padding(top = 4.dp)) {
-//				Header
+				// Header
 				Row(
 					verticalAlignment = Alignment.CenterVertically,
 					horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -80,20 +85,28 @@ fun MenuDialog(
 					modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
 				)
 
-//				Body
+				// Body
 				val scrollState = rememberScrollState()
 				Column(
 					modifier = Modifier
 						.fillMaxHeight()
-						.padding(bottom = 16.dp)
 						.verticalScroll(scrollState),
 					verticalArrangement = Arrangement.SpaceBetween
 				) {
 					Column {
-						Text(
-							"Settings bellow are NOT SAVED after app close to prevent mistakes",
-							style = Typography.bodySmall.copy(color = Red.copy(alpha = 0.5f)),
-							modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+						SettingsLabel(
+							text = "App Settings (saved on close)",
+							style = Typography.bodySmall.copy(color = White.copy(alpha = 0.5f)),
+						)
+						ToggleSetting(
+							label = "Bottom marquee animation (high battery)",
+							value = marqueAnimationEnabled,
+							onValueChange = { isEnabled ->
+								viewModel?.setMarqueeAnimationEnabled(isEnabled)
+							})
+						SettingsLabel(
+							text = "Session Settings (NOT saved on close)",
+							style = Typography.bodySmall.copy(color = Red.copy(alpha = 0.5f))
 						)
 						ToggleSetting(
 							label = "Vibrations", value = vibrationsEnabled, onValueChange = { isEnabled ->
@@ -117,12 +130,23 @@ fun MenuDialog(
 								viewModel?.setStopwatchModeEnabled(it)
 							})
 					}
-					AppInfo(modifier = Modifier.padding(horizontal = 16.dp))
+					AppInfo(
+						modifier = Modifier.padding(
+							top = 0.dp, start = 16.dp, end = 16.dp, bottom = 16.dp
+						)
+					)
 				}
 			}
 		}
 	}
 }
+
+@Composable
+private fun SettingsLabel(modifier: Modifier = Modifier, text: String, style: TextStyle) = Text(
+	text, style = style, modifier = modifier.padding(
+		top = 8.dp, bottom = 0.dp, start = 16.dp, end = 16.dp
+	)
+)
 
 @Composable
 private fun ToggleSetting(
@@ -151,7 +175,9 @@ private fun ToggleSetting(
 
 @Composable
 private fun AppInfo(modifier: Modifier = Modifier) {
-	val version = BuildConfig.VERSION_NAME
+	val versionName = BuildConfig.VERSION_NAME
+	val versionCode = BuildConfig.VERSION_CODE
+
 	val formattedBuildDate = try {
 		Instant.ofEpochMilli(BuildConfig.BUILD_TIME).atZone(ZoneId.systemDefault())
 			.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
@@ -163,18 +189,21 @@ private fun AppInfo(modifier: Modifier = Modifier) {
 		"""
 		JUAR4M by @1rens1 (GitHub)
 		Logo by Jo
-		Version: $version
+		Version: $versionName ($versionCode)
 		Build: $formattedBuildDate
 		""".trimIndent(),
-		style = Typography.bodyMedium.copy(color = White.copy(alpha = 0.5f)),
+		style = Typography.bodySmall.copy(
+			color = White.copy(alpha = 0.5f),
+			fontFamily = GeistMonoFontFamily
+		),
 		modifier = modifier
 	)
 }
 
-@Preview
+@Preview(widthDp = 960, heightDp = 580)
 @Composable
 fun MenuDialogPreview() {
 	Theme {
-		MenuDialog(null, { })
+		MenuDialog(null, onDismissRequest = { })
 	}
 }

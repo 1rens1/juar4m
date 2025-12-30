@@ -6,7 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +65,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.command.CommandController
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.theme.Black
@@ -113,7 +114,6 @@ fun servoLabel(name: String): AnnotatedString {
 		}
 	}
 }
-
 
 @Composable
 fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
@@ -172,7 +172,11 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 			}
 
 			if (!isEditingRanges) {
-				ServoCControls(vibrator = vibrator, inverted = servoCInverted)
+				ServoCControls(
+					vibrator = vibrator,
+					commandController = commandController,
+					inverted = servoCInverted
+				)
 			} else {
 				Column(
 					verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -203,8 +207,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 						modifier = Modifier
 							.rotate(90f)
 							.scale(0.7f)
-							.height(ButtonDefaults.MinHeight)
-						,
+							.height(ButtonDefaults.MinHeight),
 						checked = servoCInverted,
 						onCheckedChange = {
 							viewModel?.setServoCInverted(it)
@@ -305,11 +308,11 @@ fun ToggleServoButton(
 				modifier = modifier
 					.size(ControllerUI.BUTTON_SIZE)
 					.pointerInput(servo, onToggle) {
-						detectTapGestures(
-							onPress = {
-								onToggle()
-								tryAwaitRelease()
-							})
+						awaitEachGesture {
+							awaitFirstDown()
+							onToggle()
+							waitForUpOrCancellation()
+						}
 					},
 				shape = shape,
 				color = servo.getColor(),
@@ -463,14 +466,16 @@ fun ToggleServoRangeSliderThumb(color: Color, value: Float) {
 
 @Composable
 fun ServoCControls(
-	modifier: Modifier = Modifier, vibrator: VibrationManager?, inverted: Boolean = false
+	modifier: Modifier = Modifier,
+	vibrator: VibrationManager?,
+	commandController: CommandController?,
+	inverted: Boolean = false
 ) {
 	var command by remember { mutableStateOf("RELEASED") }
 	val density = LocalDensity.current
 	val buttonSize = ControllerUI.BUTTON_SIZE
 	val servoCLabel = remember { servoLabel("C") }
 
-//		Text(text = command, style = Typography.bodySmall)
 	Row(
 		modifier = modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT),
 		verticalAlignment = Alignment.CenterVertically,
@@ -510,6 +515,13 @@ fun ServoCControls(
 							if (command != newCommand) {
 								command = newCommand
 								if (command != "RELEASED") vibrator?.strongClick()
+
+								val angle = when (command) {
+									"UP" -> 180
+									"DOWN" -> 0
+									else -> 90
+								}
+								commandController?.setServo(3, angle)
 							}
 						}
 
@@ -522,7 +534,7 @@ fun ServoCControls(
 
 						if (command != "RELEASED") {
 							command = "RELEASED"
-//								vibrator.cancel()
+							commandController?.setServo(3, 90)
 						}
 					}
 				}) {

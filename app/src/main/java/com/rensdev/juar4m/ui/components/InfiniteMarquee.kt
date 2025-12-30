@@ -29,7 +29,8 @@ fun InfiniteMarquee(
 	textStyle: TextStyle,
 	modifier: Modifier = Modifier,
 	gap: Float = 128f,
-	speed: Float = 16f
+	speed: Float = 16f,
+	playing: Boolean = true
 ) {
 	val textMeasurer = rememberTextMeasurer()
 	val textLayout = remember(text, textStyle) {
@@ -43,7 +44,9 @@ fun InfiniteMarquee(
 
 	var offset by remember { mutableFloatStateOf(0f) }
 
-	LaunchedEffect(text, speed) {
+	LaunchedEffect(text, speed, playing) {
+		if (!playing) return@LaunchedEffect
+
 		var lastTime = withFrameMillis { it }
 		while (isActive) {
 			val frameTime = withFrameMillis { it }

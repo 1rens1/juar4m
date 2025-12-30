@@ -13,9 +13,11 @@ import kotlinx.coroutines.flow.map
 
 val Context.userPreferences: DataStore<Preferences> by preferencesDataStore("user_preferences")
 
+@Suppress("KotlinConstantConditions")
 class UserPreferences(private val context: Context) {
 	companion object {
 		val LAST_DEVICE_ADDRESS = stringPreferencesKey("bluetooth.last_device_address")
+		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
 		// val APP_VIBRATIONS_ENABLED = booleanPreferencesKey("app.vibrations_enabled")
 		// val APP_DISCONNECT_LOCK_ENABLED = booleanPreferencesKey("app.disconnect_lock_enabled")
 		// val APP_STOPWATCH_MODE_ENABLED = booleanPreferencesKey("app.stopwatch_mode_enabled")
@@ -52,6 +54,13 @@ class UserPreferences(private val context: Context) {
 
 	val lastDeviceAddress = get(LAST_DEVICE_ADDRESS, UserPreferencesDefaults.LAST_DEVICE_ADDRESS)
 	suspend fun setLastDeviceAddress(name: String?) = set(LAST_DEVICE_ADDRESS, name)
+
+	val marqueeAnimationEnabled =
+		get(APP_MARQUEE_ANIMATION_ENABLED, UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED)
+
+	suspend fun setMarqueeAnimationEnabled(enabled: Boolean) =
+		set(APP_MARQUEE_ANIMATION_ENABLED, enabled)
+
 	// MOVED TO MainViewModel.kt
 	// val vibrationsEnabled =
 	// 	get(APP_VIBRATIONS_ENABLED, UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)

@@ -11,7 +11,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
-private const val UPDATE_PER_SECOND = 30
+private const val UPDATE_PER_SECOND = 25
 private const val UPDATE_INTERVAL_MILLIS = 1000L / UPDATE_PER_SECOND
 
 class StopwatchManager(private val scope: CoroutineScope) {
@@ -26,13 +26,10 @@ class StopwatchManager(private val scope: CoroutineScope) {
 	private val _isRunning = MutableStateFlow(false)
 	val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
+	private var isFinished = false
 
-	/**
-	 * Called whenever a control input is detected.
-	 * Starts the timer if it's not already running.
-	 */
 	fun onInputDetected() {
-		if (!_isRunning.value) {
+		if (!_isRunning.value && !isFinished) {
 			start()
 		}
 	}
@@ -41,6 +38,7 @@ class StopwatchManager(private val scope: CoroutineScope) {
 		if (_isRunning.value) return
 
 		_isRunning.value = true
+		isFinished = false
 		startTimeNs = System.nanoTime()
 
 		job = scope.launch(Dispatchers.Default) {
@@ -59,6 +57,7 @@ class StopwatchManager(private val scope: CoroutineScope) {
 		if (!_isRunning.value) return
 
 		_isRunning.value = false
+		isFinished = true
 		job?.cancel()
 
 		val currentNs = System.nanoTime()
@@ -68,7 +67,10 @@ class StopwatchManager(private val scope: CoroutineScope) {
 	}
 
 	fun reset() {
-		stop()
+		_isRunning.value = false
+		job?.cancel()
+
+		isFinished = false
 		accumulatedTimeNs = 0L
 		_elapsedMillis.value = 0L
 	}

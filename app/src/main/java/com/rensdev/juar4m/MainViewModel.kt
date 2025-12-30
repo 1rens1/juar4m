@@ -67,7 +67,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		_stopwatchModeEnabled.value = enabled
 	}
 
-
+	val marqueeAnimationEnabled = userPreferences.marqueeAnimationEnabled
+	fun setMarqueeAnimationEnabled(enabled: Boolean) = viewModelScope.launch {
+		userPreferences.setMarqueeAnimationEnabled(enabled)
+	}
 	// val vibrationsEnabled = userPreferences.vibrationsEnabled
 	// fun setVibrationsEnabled(enabled: Boolean) = viewModelScope.launch {
 	// 	userPreferences.setVibrationsEnabled(enabled)
@@ -166,8 +169,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		bluetoothController.sendCommand(bytes)
 
 		if (stopwatchModeEnabled.value && !isStopwatchRunning.value) {
-			val low = bytes[0].toInt() and 0xFF
-			val high = bytes[1].toInt() and 0xFF
+			val low = bytes[1].toInt() and 0xFF
+			val high = bytes[2].toInt() and 0xFF
 			val command = (high shl 8) or low
 
 			if (command != Commands.STOP_MOTORS) {

@@ -306,7 +306,7 @@ fun ToggleServoButton(
 		Column {
 			Surface(
 				modifier = modifier
-					.size(ControllerUI.BUTTON_SIZE)
+					.size(ControllerUI.SERVO_BUTTON_SIZE)
 					.pointerInput(servo, onToggle) {
 						awaitEachGesture {
 							awaitFirstDown()
@@ -322,7 +322,7 @@ fun ToggleServoButton(
 					Text("${servo.getValue()}$DEGREE_SYMBOL", style = ControllerUI.SERVO_TEXT_STYLE)
 				}
 			}
-			Row(modifier = Modifier.width(ControllerUI.BUTTON_SIZE)) {
+			Row(modifier = Modifier.width(ControllerUI.SERVO_BUTTON_SIZE)) {
 				ToggleServoHighLowIndicator(
 					modifier = Modifier.weight(1f),
 					targetState = ServoState.LOW,
@@ -473,7 +473,7 @@ fun ServoCControls(
 ) {
 	var command by remember { mutableStateOf("RELEASED") }
 	val density = LocalDensity.current
-	val buttonSize = ControllerUI.BUTTON_SIZE
+	val buttonSize = ControllerUI.SERVO_BUTTON_SIZE
 	val servoCLabel = remember { servoLabel("C") }
 
 	Row(
@@ -557,7 +557,7 @@ fun ServoCButton(
 	modifier: Modifier = Modifier, color: Color, iconImageVector: ImageVector, isActive: Boolean
 ) {
 	Surface(
-		modifier = modifier.size(ControllerUI.BUTTON_SIZE),
+		modifier = modifier.size(ControllerUI.SERVO_BUTTON_SIZE),
 		shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS),
 		contentColor = White,
 		color = color.copy(alpha = if (isActive) 0.3f else 0.15f)

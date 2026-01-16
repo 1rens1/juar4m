@@ -55,6 +55,8 @@ fun BluetoothButton(
 ) {
 	val lastDeviceAddress by (viewModel?.lastDeviceAddress
 		?: flowOf(null)).collectAsState(initial = null)
+	val favoriteDevices by (viewModel?.favoriteDevices
+		?: flowOf(emptySet())).collectAsState(initial = emptySet())
 
 	val connectedDevice by (viewModel?.connectedDevice ?: flowOf(null)).collectAsState(initial = null)
 
@@ -93,6 +95,8 @@ fun BluetoothButton(
 	if (showDialog) {
 		BluetoothDevicesListDialog(
 			lastDeviceAddress = lastDeviceAddress,
+			favoriteDevices = favoriteDevices,
+			toggleFavoriteDevice = { viewModel?.toggleFavoriteDevice(it) },
 			bluetoothStatus = bluetoothStatus,
 			connectedDevice = connectedDevice,
 			bondedDevices = bondedDevices,
@@ -107,7 +111,7 @@ fun BluetoothButton(
 			onRefresh = { loadDevices() },
 			onDisconnect = {
 				viewModel?.disconnectBluetooth()
-				showDialog = false
+				// showDialog = false
 			},
 			isRefreshing = isRefreshing
 		)

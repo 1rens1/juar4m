@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rensdev.juar4m.ui.components.controller.ServoState
 import kotlinx.coroutines.flow.map
@@ -18,10 +19,9 @@ val Context.userPreferences: DataStore<Preferences> by preferencesDataStore("use
 class UserPreferences(private val context: Context) {
 	companion object {
 		val LAST_DEVICE_ADDRESS = stringPreferencesKey("bluetooth.last_device_address")
+		val FAVORITE_DEVICES = stringSetPreferencesKey("bluetooth.favorite_devices")
+
 		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
-		// val APP_VIBRATIONS_ENABLED = booleanPreferencesKey("app.vibrations_enabled")
-		// val APP_DISCONNECT_LOCK_ENABLED = booleanPreferencesKey("app.disconnect_lock_enabled")
-		// val APP_STOPWATCH_MODE_ENABLED = booleanPreferencesKey("app.stopwatch_mode_enabled")
 
 		// Servo A
 		val SERVO_A_RANGE_LOW = floatPreferencesKey("servo.a.range_low")
@@ -59,25 +59,27 @@ class UserPreferences(private val context: Context) {
 	val lastDeviceAddress = get(LAST_DEVICE_ADDRESS, UserPreferencesDefaults.LAST_DEVICE_ADDRESS)
 	suspend fun setLastDeviceAddress(name: String?) = set(LAST_DEVICE_ADDRESS, name)
 
+	val favoriteDevices = get(FAVORITE_DEVICES, emptySet())
+	suspend fun toggleFavoriteDevice(address: String) {
+		context.userPreferences.edit { preferences ->
+			val currentFavorites = preferences[FAVORITE_DEVICES] ?: emptySet()
+			val newFavorites = currentFavorites.toMutableSet()
+
+			if (newFavorites.contains(address)) {
+				newFavorites.remove(address)
+			} else {
+				newFavorites.add(address)
+			}
+			preferences[FAVORITE_DEVICES] = newFavorites
+		}
+	}
+
+
 	val marqueeAnimationEnabled =
 		get(APP_MARQUEE_ANIMATION_ENABLED, UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED)
 
 	suspend fun setMarqueeAnimationEnabled(enabled: Boolean) =
 		set(APP_MARQUEE_ANIMATION_ENABLED, enabled)
-
-	// MOVED TO MainViewModel.kt
-	// val vibrationsEnabled =
-	// 	get(APP_VIBRATIONS_ENABLED, UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)
-	//
-	// suspend fun setVibrationsEnabled(enabled: Boolean) = set(APP_VIBRATIONS_ENABLED, enabled)
-	// val disconnectLockEnabled =
-	// 	get(APP_DISCONNECT_LOCK_ENABLED, UserPreferencesDefaults.APP_DISCONNECT_LOCK_ENABLED)
-	//
-	// suspend fun setDisconnectLockEnabled(enabled: Boolean) = set(APP_DISCONNECT_LOCK_ENABLED, enabled)
-	// val stopwatchModeEnabled =
-	// 	get(APP_STOPWATCH_MODE_ENABLED, UserPreferencesDefaults.APP_STOPWATCH_MODE_ENABLED)
-	//
-	// suspend fun setStopwatchModeEnabled(enabled: Boolean) = set(APP_STOPWATCH_MODE_ENABLED, enabled)
 
 	// Servo A
 	val servoAState = get(

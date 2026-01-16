@@ -47,6 +47,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	fun setLastDeviceAddress(address: String?) =
 		viewModelScope.launch { userPreferences.setLastDeviceAddress(address) }
 
+	val favoriteDevices = userPreferences.favoriteDevices
+	fun toggleFavoriteDevice(address: String) =
+		viewModelScope.launch { userPreferences.toggleFavoriteDevice(address) }
+
 	private val _vibrationsEnabled = MutableStateFlow(UserPreferencesDefaults.APP_VIBRATIONS_ENABLED)
 	val vibrationsEnabled = _vibrationsEnabled.asStateFlow()
 	fun setVibrationsEnabled(enabled: Boolean) {
@@ -71,20 +75,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	fun setMarqueeAnimationEnabled(enabled: Boolean) = viewModelScope.launch {
 		userPreferences.setMarqueeAnimationEnabled(enabled)
 	}
-	// val vibrationsEnabled = userPreferences.vibrationsEnabled
-	// fun setVibrationsEnabled(enabled: Boolean) = viewModelScope.launch {
-	// 	userPreferences.setVibrationsEnabled(enabled)
-	// }
-	//
-	// val disconnectLockEnabled = userPreferences.disconnectLockEnabled
-	// fun setDisconnectLockEnabled(enabled: Boolean) = viewModelScope.launch {
-	// 	userPreferences.setDisconnectLockEnabled(enabled)
-	// }
-	//
-	// val stopwatchModeEnabled = userPreferences.stopwatchModeEnabled
-	// fun setStopwatchModeEnabled(enabled: Boolean) = viewModelScope.launch {
-	// 	userPreferences.setStopwatchModeEnabled(enabled)
-	// }
 
 	// Servo A
 	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange.stateIn(

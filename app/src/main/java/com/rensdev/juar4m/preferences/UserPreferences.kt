@@ -22,6 +22,7 @@ class UserPreferences(private val context: Context) {
 		val FAVORITE_DEVICES = stringSetPreferencesKey("bluetooth.favorite_devices")
 
 		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
+		val APP_CORNER_DPAD_BUTTONS_ENABLED = booleanPreferencesKey("app.corner_dpad_buttons_enabled")
 
 		// Servo A
 		val SERVO_A_RANGE_LOW = floatPreferencesKey("servo.a.range_low")
@@ -74,12 +75,18 @@ class UserPreferences(private val context: Context) {
 		}
 	}
 
-
 	val marqueeAnimationEnabled =
 		get(APP_MARQUEE_ANIMATION_ENABLED, UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED)
 
 	suspend fun setMarqueeAnimationEnabled(enabled: Boolean) =
 		set(APP_MARQUEE_ANIMATION_ENABLED, enabled)
+
+	val cornerDPadButtonsEnabled = get(
+		APP_CORNER_DPAD_BUTTONS_ENABLED, UserPreferencesDefaults.APP_CORNER_DPAD_BUTTONS_ENABLED
+	)
+
+	suspend fun setCornerDPadButtonsEnabled(enabled: Boolean) =
+		set(APP_CORNER_DPAD_BUTTONS_ENABLED, enabled)
 
 	// Servo A
 	val servoAState = get(

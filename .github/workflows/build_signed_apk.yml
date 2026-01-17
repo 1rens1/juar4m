@@ -25,7 +25,7 @@ jobs:
         run: ./gradlew assembleRelease -x lint -x test
         env:
           GRADLE_OPTS: -Xmx4g -XX:+UseParallelGC
-          KEYSTORE_FILE: app/release.jks
+          KEYSTORE_FILE: release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}

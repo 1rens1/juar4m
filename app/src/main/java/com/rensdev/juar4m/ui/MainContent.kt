@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
@@ -21,6 +22,7 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,12 +35,14 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.components.BatteryIndicator
 import com.rensdev.juar4m.ui.components.BluetoothButton
+import com.rensdev.juar4m.ui.components.ClockText
 import com.rensdev.juar4m.ui.components.DndIndicator
 import com.rensdev.juar4m.ui.components.InfiniteMarquee
 import com.rensdev.juar4m.ui.components.MenuButton
@@ -46,6 +50,8 @@ import com.rensdev.juar4m.ui.components.Stopwatch
 import com.rensdev.juar4m.ui.components.controller.DPadSection
 import com.rensdev.juar4m.ui.components.controller.ServoSection
 import com.rensdev.juar4m.ui.theme.GeistFontFamily
+import com.rensdev.juar4m.ui.theme.GeistMonoFontFamily
+import com.rensdev.juar4m.ui.theme.Gray
 import com.rensdev.juar4m.ui.theme.Theme
 import com.rensdev.juar4m.ui.theme.White
 import kotlinx.coroutines.flow.collectLatest
@@ -97,8 +103,7 @@ fun MainContent(
 						fontFamily = GeistFontFamily,
 						fontWeight = FontWeight.Black,
 						fontStyle = FontStyle.Italic
-					),
-					playing = marqueeAnimationEnabled
+					), playing = marqueeAnimationEnabled
 				)
 				// Controller Screen
 				Row(
@@ -135,9 +140,26 @@ fun MainContent(
 					horizontalArrangement = Arrangement.SpaceBetween,
 					verticalAlignment = Alignment.Top
 				) {
-					MenuButton(
-						modifier = Modifier, viewModel = viewModel
-					)
+					Row(
+						horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+						verticalAlignment = Alignment.Top
+					) {
+						MenuButton(
+							modifier = Modifier, viewModel = viewModel
+						)
+						Box(modifier = Modifier.height(16.dp), contentAlignment = Alignment.Center) {
+							ClockText {
+								Text(
+									text = it,
+									fontSize = 12.sp,
+									lineHeight = 12.sp,
+									color = Gray,
+									fontFamily = GeistMonoFontFamily
+								)
+							}
+						}
+					}
+
 					Row(
 						horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
 						verticalAlignment = Alignment.CenterVertically
@@ -145,7 +167,6 @@ fun MainContent(
 						DndIndicator()
 						BatteryIndicator()
 					}
-
 				}
 				BluetoothButton(
 					viewModel = viewModel,

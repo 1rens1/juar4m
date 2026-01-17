@@ -5,6 +5,7 @@ import com.rensdev.juar4m.ui.components.controller.ServoState
 object UserPreferencesDefaults {
 	val LAST_DEVICE_ADDRESS = null
 	const val APP_MARQUEE_ANIMATION_ENABLED = true
+	const val APP_CORNER_DPAD_BUTTONS_ENABLED = true
 	const val APP_VIBRATIONS_ENABLED = true
 	const val APP_DISCONNECT_LOCK_ENABLED = true
 	const val APP_STOPWATCH_MODE_ENABLED = false

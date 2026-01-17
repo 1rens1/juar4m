@@ -76,6 +76,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		userPreferences.setMarqueeAnimationEnabled(enabled)
 	}
 
+	val cornerDPadButtonsEnabled = userPreferences.cornerDPadButtonsEnabled
+	fun setCornerDPadButtonsEnabled(enabled: Boolean) = viewModelScope.launch {
+		userPreferences.setCornerDPadButtonsEnabled(enabled)
+	}
+
 	// Servo A
 	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_RANGE

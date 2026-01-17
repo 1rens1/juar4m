@@ -22,6 +22,10 @@ import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowLeft
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
+import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.NorthWest
+import androidx.compose.material.icons.filled.SouthEast
+import androidx.compose.material.icons.filled.SouthWest
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -45,6 +49,9 @@ import androidx.compose.ui.unit.DpSize
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.command.CommandController
 import com.rensdev.juar4m.command.Commands
+import com.rensdev.juar4m.preferences.UserPreferencesDefaults
+import com.rensdev.juar4m.preferences.collectAsStateOrFallback
+import com.rensdev.juar4m.stopwatch.StopwatchManager
 import com.rensdev.juar4m.utils.VibrationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -52,6 +59,7 @@ import kotlinx.coroutines.launch
 
 class DPadController(
 	private val commandController: CommandController?,
+	private val stopwatchManager: StopwatchManager?,
 	private val vibrator: VibrationManager?,
 	private val scope: CoroutineScope
 ) {
@@ -103,6 +111,8 @@ class DPadController(
 					if (hitCommand != null && !isNudge(hitCommand)) {
 						if (activeKey != hitCommand) {
 							activeKey = hitCommand
+							stopwatchManager?.onInputDetected()
+							vibrator?.click()
 							vibrator?.weakContinuous()
 							commandController?.drive(hitCommand) // Direct Int pass
 						}
@@ -152,8 +162,9 @@ fun rememberDPadController(viewModel: MainViewModel?): DPadController {
 	val scope = rememberCoroutineScope()
 	val vibrator = viewModel?.vibrator
 	val commandController = viewModel?.commandController
+	val stopwatchManager = viewModel?.stopwatchManager
 	return remember(vibrator, commandController) {
-		DPadController(commandController, vibrator, scope)
+		DPadController(commandController, stopwatchManager, vibrator, scope)
 	}
 }
 
@@ -170,6 +181,9 @@ fun Modifier.dpadTag(controller: DPadController, command: Int): Modifier =
 @Composable
 fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	val controller = rememberDPadController(viewModel)
+	val cornerDPadButtons by viewModel?.cornerDPadButtonsEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_CORNER_DPAD_BUTTONS_ENABLED
+	)
 
 	Box(
 		modifier = modifier
@@ -188,11 +202,29 @@ fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				modifier = Modifier.dpadTag(controller, Commands.NUDGE_FORWARD)
 			)
 
-			DPadButton(
-				isActive = controller.activeKey == Commands.MOVE_FORWARD,
-				iconImageVector = Icons.Default.ArrowUpward,
-				modifier = Modifier.dpadTag(controller, Commands.MOVE_FORWARD)
-			)
+			Row(
+				horizontalArrangement = Arrangement.spacedBy(ControllerUI.DPAD_GAP),
+				verticalAlignment = Alignment.Bottom
+			) {
+				if (cornerDPadButtons) DPadButton(
+					isCorner = true,
+					isActive = controller.activeKey == Commands.MOVE_FORWARD_LEFT,
+					iconImageVector = Icons.Default.NorthWest,
+					modifier = Modifier.dpadTag(controller, Commands.MOVE_FORWARD_LEFT)
+				)
+				DPadButton(
+					isActive = controller.activeKey == Commands.MOVE_FORWARD,
+					iconImageVector = Icons.Default.ArrowUpward,
+					modifier = Modifier.dpadTag(controller, Commands.MOVE_FORWARD)
+				)
+				if (cornerDPadButtons) DPadButton(
+					isCorner = true,
+					isActive = controller.activeKey == Commands.MOVE_FORWARD_RIGHT,
+					iconImageVector = Icons.Default.NorthEast,
+					modifier = Modifier.dpadTag(controller, Commands.MOVE_FORWARD_RIGHT)
+				)
+			}
+
 
 			Row(horizontalArrangement = Arrangement.spacedBy(ControllerUI.DPAD_GAP)) {
 				NudgeButton(
@@ -220,11 +252,26 @@ fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				)
 			}
 
-			DPadButton(
-				isActive = controller.activeKey == Commands.MOVE_BACKWARD,
-				iconImageVector = Icons.Default.ArrowDownward,
-				modifier = Modifier.dpadTag(controller, Commands.MOVE_BACKWARD)
-			)
+			Row(horizontalArrangement = Arrangement.spacedBy(ControllerUI.DPAD_GAP)) {
+				if (cornerDPadButtons) DPadButton(
+					isCorner = true,
+					isActive = controller.activeKey == Commands.MOVE_BACKWARD_LEFT,
+					iconImageVector = Icons.Default.SouthWest,
+					modifier = Modifier.dpadTag(controller, Commands.MOVE_BACKWARD_LEFT)
+				)
+				DPadButton(
+					isActive = controller.activeKey == Commands.MOVE_BACKWARD,
+					iconImageVector = Icons.Default.ArrowDownward,
+					modifier = Modifier.dpadTag(controller, Commands.MOVE_BACKWARD)
+				)
+				if (cornerDPadButtons) DPadButton(
+					isCorner = true,
+					isActive = controller.activeKey == Commands.MOVE_BACKWARD_RIGHT,
+					iconImageVector = Icons.Default.SouthEast,
+					modifier = Modifier.dpadTag(controller, Commands.MOVE_BACKWARD_RIGHT)
+				)
+			}
+
 			NudgeButton(
 				orientation = Orientation.Horizontal,
 				isActive = controller.activeNudge == Commands.NUDGE_BACKWARD,
@@ -237,11 +284,14 @@ fun DPadSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 
 @Composable
 fun DPadButton(
-	modifier: Modifier = Modifier, isActive: Boolean = false, iconImageVector: ImageVector
+	modifier: Modifier = Modifier,
+	isActive: Boolean = false,
+	iconImageVector: ImageVector,
+	isCorner: Boolean = false
 ) {
 	Surface(
-		modifier = modifier.size(ControllerUI.BUTTON_SIZE),
-		color = if (isActive) ControllerUI.DPAD_ACTIVE_COLOR else ControllerUI.DPAD_COLOR,
+		modifier = modifier.size(if (isCorner) ControllerUI.CORNER_BUTTON_SIZE else ControllerUI.BUTTON_SIZE),
+		color = if (isActive) ControllerUI.DPAD_ACTIVE_COLOR else if (isCorner) ControllerUI.DPAD_CORNER_COLOR else ControllerUI.DPAD_COLOR,
 		contentColor = if (isActive) ControllerUI.DPAD_ACTIVE_CONTENT_COLOR else ControllerUI.DPAD_CONTENT_COLOR,
 		shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS)
 	) {

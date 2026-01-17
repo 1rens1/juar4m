@@ -49,6 +49,9 @@ fun MenuDialog(
 	val marqueAnimationEnabled by viewModel?.marqueeAnimationEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_MARQUEE_ANIMATION_ENABLED
 	)
+	val cornerDPadButtonsEnabled by viewModel?.cornerDPadButtonsEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_CORNER_DPAD_BUTTONS_ENABLED
+	)
 	val vibrationsEnabled by viewModel?.vibrationsEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_VIBRATIONS_ENABLED
 	)
@@ -103,6 +106,12 @@ fun MenuDialog(
 							value = marqueAnimationEnabled,
 							onValueChange = { isEnabled ->
 								viewModel?.setMarqueeAnimationEnabled(isEnabled)
+							})
+						ToggleSetting(
+							label = "Corner DPad Buttons (↖↗↙↘)",
+							value = cornerDPadButtonsEnabled,
+							onValueChange = { isEnabled ->
+								viewModel?.setCornerDPadButtonsEnabled(isEnabled)
 							})
 						SettingsLabel(
 							text = "Session Settings (NOT saved on close)",

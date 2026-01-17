@@ -12,10 +12,12 @@ import com.rensdev.juar4m.ui.theme.Yellow
 
 data object ControllerUI {
 	val BUTTON_SIZE = 75.dp
+	val CORNER_BUTTON_SIZE = 65.dp
 	val BUTTON_ROUNDNESS = 8.dp
 	val ICON_SIZE = BUTTON_SIZE * 0.5f
 	val DPAD_GAP = 0.dp
 	val DPAD_COLOR = White
+	val DPAD_CORNER_COLOR = White.copy(alpha = 0.25f)
 	val DPAD_CONTENT_COLOR = Black
 	val DPAD_ACTIVE_COLOR = Red
 	val DPAD_ACTIVE_CONTENT_COLOR = White

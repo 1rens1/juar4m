@@ -37,6 +37,7 @@ fun MenuButton(modifier: Modifier = Modifier, viewModel: MainViewModel?) {
 					viewModel?.showSnackbar("Long press to open menu")
 				},
 				onLongClick = {
+					viewModel?.vibrator?.click()
 					showMenu = true
 				}
 			),

@@ -69,6 +69,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	val stopwatchModeEnabled = _stopwatchModeEnabled.asStateFlow()
 	fun setStopwatchModeEnabled(enabled: Boolean) {
 		_stopwatchModeEnabled.value = enabled
+		if (!enabled) {
+			stopwatchManager.stop()
+			stopwatchManager.reset()
+		}
 	}
 
 	val marqueeAnimationEnabled = userPreferences.marqueeAnimationEnabled
@@ -163,19 +167,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 	//////////////////// COMMAND CONTROLLER /////////////////////
 	private val controllerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-	val commandController = CommandController(controllerScope) { bytes ->
+	val commandController = CommandController(controllerScope, { bytes ->
 		bluetoothController.sendCommand(bytes)
-
-		if (stopwatchModeEnabled.value && !isStopwatchRunning.value) {
-			val low = bytes[1].toInt() and 0xFF
-			val high = bytes[2].toInt() and 0xFF
-			val command = (high shl 8) or low
-
-			if (command != Commands.STOP_MOTORS) {
-				stopwatchManager.onInputDetected()
-			}
+	}, { command ->
+		if (command != Commands.STOP_MOTORS && stopwatchModeEnabled.value) {
+			stopwatchManager.start()
 		}
-	}
+	})
 
 	init {
 		viewModelScope.launch {

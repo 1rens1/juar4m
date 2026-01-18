@@ -155,6 +155,10 @@ class BluetoothController(context: Context) {
 	}
 
 	fun sendCommand(bytes: ByteArray) {
+		sendRaw(byteArrayOf(0xFF.toByte()) + bytes)
+	}
+
+	fun sendRaw(bytes: ByteArray) {
 		if (_status.value != BluetoothStatus.Connected) return
 		sendChannel.trySend(bytes)
 	}

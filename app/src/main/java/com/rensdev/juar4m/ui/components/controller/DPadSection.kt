@@ -111,7 +111,6 @@ class DPadController(
 					if (hitCommand != null && !isNudge(hitCommand)) {
 						if (activeKey != hitCommand) {
 							activeKey = hitCommand
-							stopwatchManager?.onInputDetected()
 							vibrator?.click()
 							vibrator?.weakContinuous()
 							commandController?.drive(hitCommand) // Direct Int pass

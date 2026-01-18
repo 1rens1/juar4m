@@ -10,7 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class CommandController(
 	private val scope: CoroutineScope,
-	private val onSendPacket: (ByteArray) -> Unit
+	private val onSendCommand: (bytes: ByteArray) -> Unit,
+	private val onInput: (command: Int) -> Unit
 ) {
 	private val currentDriveState = AtomicInteger(Commands.STOP_MOTORS)
 
@@ -22,22 +23,24 @@ class CommandController(
 
 	fun setServo(id: Int, angle: Int) {
 		val packed = 0x8000 or ((id and 0x7F) shl 8) or (angle and 0xFF)
-		sendRaw(packed)
+		sendCommand(packed)
 	}
 
 	fun drive(command: Int) {
 		currentDriveState.set(command)
+		onInput(command)
 	}
 
 	fun stop() {
 		currentDriveState.set(Commands.STOP_MOTORS)
+		onInput(Commands.STOP_MOTORS)
 	}
 
 	fun nudge(command: Int) {
 		pauseTicker = true
 		nudgeJob?.cancel()
 
-		sendRaw(command)
+		sendCommand(command)
 
 		nudgeJob = scope.launch {
 			delay(60)
@@ -50,7 +53,7 @@ class CommandController(
 		tickerJob = scope.launch(Dispatchers.IO) {
 			while (isActive) {
 				if (!pauseTicker) {
-					sendRaw(currentDriveState.get())
+					sendCommand(currentDriveState.get())
 				}
 				delay(30)
 			}
@@ -63,12 +66,13 @@ class CommandController(
 		pauseTicker = false
 	}
 
-	private fun sendRaw(command: Int) {
+	private fun sendCommand(command: Int) {
+		// Int to 2 byte little endian
 		val bytes = byteArrayOf(
-			0xFF.toByte(), // Header
 			(command and 0xFF).toByte(),
 			((command shr 8) and 0xFF).toByte()
 		)
-		onSendPacket(bytes)
+		onSendCommand(bytes)
+		onInput(command)
 	}
 }

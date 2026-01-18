@@ -26,19 +26,14 @@ class StopwatchManager(private val scope: CoroutineScope) {
 	private val _isRunning = MutableStateFlow(false)
 	val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
-	private var isFinished = false
-
-	fun onInputDetected() {
-		if (!_isRunning.value && !isFinished) {
-			start()
-		}
-	}
+	private var isReady = true
 
 	fun start() {
 		if (_isRunning.value) return
+		if (!isReady) return
 
 		_isRunning.value = true
-		isFinished = false
+		isReady = true
 		startTimeNs = System.nanoTime()
 
 		job = scope.launch(Dispatchers.Default) {
@@ -57,7 +52,7 @@ class StopwatchManager(private val scope: CoroutineScope) {
 		if (!_isRunning.value) return
 
 		_isRunning.value = false
-		isFinished = true
+		isReady = false
 		job?.cancel()
 
 		val currentNs = System.nanoTime()
@@ -70,7 +65,7 @@ class StopwatchManager(private val scope: CoroutineScope) {
 		_isRunning.value = false
 		job?.cancel()
 
-		isFinished = false
+		isReady = true
 		accumulatedTimeNs = 0L
 		_elapsedMillis.value = 0L
 	}

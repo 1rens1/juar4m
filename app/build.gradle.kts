@@ -11,7 +11,7 @@ plugins {
 }
 
 val commitCount = providers.exec {
-	commandLine("git", "rev-list", "--count", "--all")
+	commandLine("git", "rev-list", "--count", "HEAD")
 }.standardOutput.asText.map { it.trim().toInt() }
 
 val commitHash = providers.exec {

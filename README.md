@@ -12,6 +12,13 @@ This app was developed for the GreenMech Robot for Mission (R4M) Classic competi
 
 The logo (designed by Jo) features a sabertooth, symbolizing precision and decisive action.
 
+## Firmware (Arduino Code)
+
+> [!IMPORTANT]
+> This app requires the companion JUAR4M firmware, which handles the Bluetooth protocol, pin mapping, and safety logic.
+>
+> **JUAR4M Arduino Repository**: [1rens1/juar4m-arduino](https://github.com/1rens1/juar4m-arduino)
+
 ## Requirements
 
 - Android 10 ("Q") (API level 29) or greater
@@ -34,7 +41,7 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
   - **Servo A & B:** Toggle buttons with configurable angle ranges via sliders.
   - **Servo C:** Dedicated controls for continuous rotation (Up/Down/Stop).
 
-### Utility
+### Utilities
 
 - **Competition Stopwatch:**
   - Auto-starts on first input detection.
@@ -43,12 +50,6 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 - **Feedback:** Haptic feedback (vibrations) on button presses.
 - **Status Indicators:** Phone battery percentage, Do Not Disturb (DND) status, and connection state.
 - **Visuals:** Animated marquee background (can be toggled for battery saving).
-
-## Firmware (Arduino Code)
-
-The firmware handles the Bluetooth protocol, pin mapping, and safety logic.
-
-- **JUAR4M Arduino Repository:** [1rens1/juar4m-arduino](https://github.com/1rens1/juar4m-arduino)
 
 ## Technologies and Assets Used
 

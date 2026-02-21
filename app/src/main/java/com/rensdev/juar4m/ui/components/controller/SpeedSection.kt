@@ -35,97 +35,89 @@ import com.rensdev.juar4m.ui.theme.White
 
 @Composable
 fun SpeedSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
-	val vibrator = viewModel?.vibrator
-	val commandController = viewModel?.commandController
 	val speedRange by viewModel?.speedRange.collectAsStateOrFallback(UserPreferencesDefaults.SPEED_RANGE)
 	val speedState by viewModel?.speedState.collectAsStateOrFallback(UserPreferencesDefaults.SPEED_STATE)
+	val commandController = viewModel?.commandController
+	val vibrator = viewModel?.vibrator
 
 	Row(
 		modifier = modifier,
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(8.dp)
 	) {
+
 		Text(
-			"Speed",
+			text = "Speed",
 			modifier = Modifier
 				.vertical()
 				.rotate(-90f),
 			color = White.copy(alpha = 0.5f),
 			style = Typography.labelLarge
 		)
-		Column(
-			verticalArrangement = Arrangement.spacedBy(8.dp)
-		) {
-			Surface(
-				modifier = Modifier
-					.size(ControllerUI.SPEED_BUTTON_SIZE)
-					.border(
-						2.dp,
-						ControllerUI.SPEED_HIGH_COLOR.copy(alpha = 0.25f),
-						RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS)
-					)
-					.pointerInput(Unit) {
-						awaitEachGesture {
-							awaitFirstDown()
-							if (speedState != RangeState.HIGH) {
-								viewModel?.setSpeedState(RangeState.HIGH)
-								commandController?.setSpeed(speedRange.endInclusive.toInt())
-								vibrator?.strongClick()
-							}
-							waitForUpOrCancellation()
-						}
-					},
-				shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS),
-				color = if (speedState == RangeState.HIGH) ControllerUI.SPEED_HIGH_COLOR else ControllerUI.SPEED_INACTIVE_COLOR,
-			) {
-				Box(
-					modifier = Modifier.fillMaxSize(),
-					contentAlignment = Alignment.Center
-				) {
-					Text(
-						"${speedRange.endInclusive.toInt()}",
-						fontFamily = GeistMonoFontFamily,
-						color = Black,
-						fontWeight = FontWeight.Bold,
-						letterSpacing = 1.sp
-					)
+
+		Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+			SpeedButton(
+				value = speedRange.endInclusive.toInt(),
+				isActive = speedState == RangeState.HIGH,
+				activeColor = ControllerUI.SPEED_HIGH_COLOR,
+				onClick = {
+					if (speedState != RangeState.HIGH) {
+						viewModel?.setSpeedState(RangeState.HIGH)
+						commandController?.setSpeed(speedRange.endInclusive.toInt())
+						vibrator?.strongClick()
+					}
 				}
-			}
-			Surface(
-				modifier = Modifier
-					.size(ControllerUI.SPEED_BUTTON_SIZE)
-					.border(
-						2.dp,
-						ControllerUI.SPEED_LOW_COLOR.copy(alpha = 0.25f),
-						RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS)
-					)
-					.pointerInput(Unit) {
-						awaitEachGesture {
-							awaitFirstDown()
-							if (speedState != RangeState.LOW) {
-								viewModel?.setSpeedState(RangeState.LOW)
-								commandController?.setSpeed(speedRange.start.toInt())
-								vibrator?.strongClick()
-							}
-							waitForUpOrCancellation()
-						}
-					},
-				shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS),
-				color = if (speedState == RangeState.LOW) ControllerUI.SPEED_LOW_COLOR else ControllerUI.SPEED_INACTIVE_COLOR
-			) {
-				Box(
-					modifier = Modifier.fillMaxSize(),
-					contentAlignment = Alignment.Center
-				) {
-					Text(
-						"${speedRange.start.toInt()}",
-						fontFamily = GeistMonoFontFamily,
-						color = Black,
-						fontWeight = FontWeight.Bold,
-						letterSpacing = 1.sp
-					)
+			)
+
+			SpeedButton(
+				value = speedRange.start.toInt(),
+				isActive = speedState == RangeState.LOW,
+				activeColor = ControllerUI.SPEED_LOW_COLOR,
+				onClick = {
+					if (speedState != RangeState.LOW) {
+						viewModel?.setSpeedState(RangeState.LOW)
+						commandController?.setSpeed(speedRange.start.toInt())
+						vibrator?.strongClick()
+					}
 				}
-			}
+			)
+		}
+	}
+}
+
+@Composable
+private fun SpeedButton(
+	value: Int,
+	isActive: Boolean,
+	activeColor: androidx.compose.ui.graphics.Color,
+	onClick: () -> Unit
+) {
+	Surface(
+		modifier = Modifier
+			.size(ControllerUI.SPEED_BUTTON_SIZE)
+			.border(
+				2.dp,
+				activeColor.copy(alpha = 0.25f),
+				RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS)
+			)
+			.pointerInput(Unit) {
+				awaitEachGesture {
+					awaitFirstDown()
+					onClick()
+					waitForUpOrCancellation()
+				}
+			},
+		shape = RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS),
+		color = if (isActive) activeColor else ControllerUI.SPEED_INACTIVE_COLOR
+	) {
+		Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+			Text(
+				text = "$value",
+				fontFamily = GeistMonoFontFamily,
+				color = Black,
+				fontWeight = FontWeight.Bold,
+				letterSpacing = 1.sp
+			)
 		}
 	}
 }

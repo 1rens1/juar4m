@@ -1,11 +1,14 @@
 package com.rensdev.juar4m.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
@@ -23,15 +26,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.BuildConfig
 import com.rensdev.juar4m.MainViewModel
+import com.rensdev.juar4m.R
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
-import com.rensdev.juar4m.ui.components.controller.AnimatedSideDialog
 import com.rensdev.juar4m.ui.theme.ColorScheme
 import com.rensdev.juar4m.ui.theme.GeistMonoFontFamily
 import com.rensdev.juar4m.ui.theme.Red
@@ -73,15 +77,28 @@ fun MenuDialog(
 			Column(modifier = Modifier.padding(top = 4.dp)) {
 				// Header
 				Row(
-					verticalAlignment = Alignment.CenterVertically,
-					horizontalArrangement = Arrangement.spacedBy(4.dp)
+					modifier = Modifier.fillMaxWidth(),
+					horizontalArrangement = Arrangement.SpaceBetween
 				) {
-					IconButton(onClick = dismiss) {
-						Icon(
-							imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back"
-						)
+					Row(
+						verticalAlignment = Alignment.CenterVertically,
+						horizontalArrangement = Arrangement.spacedBy(4.dp)
+					) {
+						IconButton(onClick = dismiss) {
+							Icon(
+								imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back"
+							)
+						}
+						Text("Menu", style = Typography.titleLarge)
+
 					}
-					Text("Menu", style = Typography.titleLarge)
+					Image(
+						painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+						contentDescription = "JUAR4M Logo",
+						modifier = Modifier
+							.size(48.dp)
+							.offset((-4).dp)
+					)
 				}
 				HorizontalDivider(
 					color = White.copy(alpha = 0.1f),

@@ -66,6 +66,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.command.CommandController
+import com.rensdev.juar4m.preferences.RangeState
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.theme.Black
@@ -75,34 +76,32 @@ import com.rensdev.juar4m.ui.theme.colorMix
 import com.rensdev.juar4m.utils.VibrationManager
 import kotlin.math.roundToInt
 
-enum class ServoState { LOW, HIGH }
-
 val SERVO_ANGLE_BOUNDS = 0f..180f
 const val DEGREE_SYMBOL = '\u00B0'
 
 data class ToggleServo(
-	val state: ServoState,
+	val state: RangeState,
 	val range: ClosedFloatingPointRange<Float> = 0f..180f,
 )
 
 fun ToggleServo.getValue(): Int {
 	return when (state) {
-		ServoState.LOW -> range.start
-		ServoState.HIGH -> range.endInclusive
+		RangeState.LOW -> range.start
+		RangeState.HIGH -> range.endInclusive
 	}.roundToInt()
 }
 
 fun ToggleServo.getColor(): Color {
 	return when (state) {
-		ServoState.LOW -> ControllerUI.SERVO_TOGGLE_LOW_COLOR
-		ServoState.HIGH -> ControllerUI.SERVO_TOGGLE_HIGH_COLOR
+		RangeState.LOW -> ControllerUI.SERVO_TOGGLE_LOW_COLOR
+		RangeState.HIGH -> ControllerUI.SERVO_TOGGLE_HIGH_COLOR
 	}
 }
 
-fun ToggleServo.getHighLow(state: ServoState): Int {
+fun ToggleServo.getHighLow(state: RangeState): Int {
 	return when (state) {
-		ServoState.LOW -> range.start
-		ServoState.HIGH -> range.endInclusive
+		RangeState.LOW -> range.start
+		RangeState.HIGH -> range.endInclusive
 	}.roundToInt()
 }
 
@@ -133,11 +132,15 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	var editRangeA by remember { mutableStateOf(storedRangeA) }
 	var editRangeB by remember { mutableStateOf(storedRangeB) }
 
-	LaunchedEffect(storedRangeA, storedRangeB) {
-		if (!isEditingRanges) {
-			editRangeA = storedRangeA
-			editRangeB = storedRangeB
-		}
+	val storedSpeedRange by viewModel?.speedRange.collectAsStateOrFallback(UserPreferencesDefaults.SPEED_RANGE)
+
+	var editSpeedRange by remember { mutableStateOf(storedSpeedRange) }
+
+
+	LaunchedEffect(storedRangeA, storedRangeB, storedSpeedRange) {
+		editRangeA = storedRangeA
+		editRangeB = storedRangeB
+		editSpeedRange = storedSpeedRange
 	}
 
 	val servoA = ToggleServo(storedStateA, editRangeA)
@@ -158,13 +161,13 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
 			) {
 				ToggleServoButton(label = servoALabel, servo = servoA, onToggle = {
-					val newState = if (servoA.state == ServoState.LOW) ServoState.HIGH else ServoState.LOW
+					val newState = if (servoA.state == RangeState.LOW) RangeState.HIGH else RangeState.LOW
 					viewModel?.setServoAState(newState)
 					vibrator?.click()
 					commandController?.setServo(1, servoA.copy(state = newState).getValue())
 				})
 				ToggleServoButton(label = servoBLabel, servo = servoB, onToggle = {
-					val newState = if (servoB.state == ServoState.LOW) ServoState.HIGH else ServoState.LOW
+					val newState = if (servoB.state == RangeState.LOW) RangeState.HIGH else RangeState.LOW
 					viewModel?.setServoBState(newState)
 					vibrator?.click()
 					commandController?.setServo(2, servoB.copy(state = newState).getValue())
@@ -179,16 +182,23 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				)
 			} else {
 				Column(
-					verticalArrangement = Arrangement.spacedBy(8.dp),
+					verticalArrangement = Arrangement.spacedBy(-2.dp),
 					modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
 				) {
 					ToggleServoRangeSlider(servo = servoA, label = servoALabel, onValueChange = {
 						editRangeA = it
 					})
-					Spacer(modifier = Modifier.height(24.dp))
+					Spacer(modifier = Modifier.height(20.dp))
 					ToggleServoRangeSlider(servo = servoB, label = servoBLabel, onValueChange = {
 						editRangeB = it
 					})
+					Spacer(modifier = Modifier.height(20.dp))
+					SpeedRangeSlider(
+						speedRange = editSpeedRange,
+						onValueChange = {
+							editSpeedRange = it
+						}
+					)
 				}
 			}
 		}
@@ -211,6 +221,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 						checked = servoCInverted,
 						onCheckedChange = {
 							viewModel?.setServoCInverted(it)
+							vibrator?.click()
 						},
 						thumbContent = {
 							Icon(
@@ -234,11 +245,12 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				Surface(
 					modifier = Modifier
 						.height(ButtonDefaults.MinHeight)
-						.clip(RoundedCornerShape(ControllerUI.BUTTON_ROUNDNESS))
+						.clip(ButtonDefaults.shape)
 						.clickable {
 							vibrator?.click()
 							editRangeA = UserPreferencesDefaults.SERVO_A_RANGE
 							editRangeB = UserPreferencesDefaults.SERVO_B_RANGE
+							editSpeedRange = UserPreferencesDefaults.SPEED_RANGE
 							viewModel?.setServoCInverted(UserPreferencesDefaults.SERVO_C_INVERTED)
 						},
 					shape = ButtonDefaults.shape,
@@ -262,6 +274,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 			}, onSave = {
 				viewModel?.setServoARange(editRangeA)
 				viewModel?.setServoBRange(editRangeB)
+				viewModel?.setSpeedRange(editSpeedRange)
 
 				isEditingRanges = !isEditingRanges
 				vibrator?.click()
@@ -275,14 +288,14 @@ fun ToggleServoButton(
 	modifier: Modifier = Modifier, label: AnnotatedString, servo: ToggleServo, onToggle: () -> Unit
 ) {
 	val shape = when (servo.state) {
-		ServoState.LOW -> RoundedCornerShape(
+		RangeState.LOW -> RoundedCornerShape(
 			topStart = ControllerUI.BUTTON_ROUNDNESS,
 			topEnd = ControllerUI.BUTTON_ROUNDNESS,
 			bottomStart = 0.dp,
 			bottomEnd = ControllerUI.BUTTON_ROUNDNESS
 		)
 
-		ServoState.HIGH -> RoundedCornerShape(
+		RangeState.HIGH -> RoundedCornerShape(
 			topStart = ControllerUI.BUTTON_ROUNDNESS,
 			topEnd = ControllerUI.BUTTON_ROUNDNESS,
 			bottomStart = ControllerUI.BUTTON_ROUNDNESS,
@@ -325,12 +338,12 @@ fun ToggleServoButton(
 			Row(modifier = Modifier.width(ControllerUI.SERVO_BUTTON_SIZE)) {
 				ToggleServoHighLowIndicator(
 					modifier = Modifier.weight(1f),
-					targetState = ServoState.LOW,
+					targetState = RangeState.LOW,
 					servo = servo,
 				)
 				ToggleServoHighLowIndicator(
 					modifier = Modifier.weight(1f),
-					targetState = ServoState.HIGH,
+					targetState = RangeState.HIGH,
 					servo = servo,
 				)
 			}
@@ -340,7 +353,7 @@ fun ToggleServoButton(
 
 @Composable
 fun ToggleServoHighLowIndicator(
-	modifier: Modifier = Modifier, targetState: ServoState, servo: ToggleServo
+	modifier: Modifier = Modifier, targetState: RangeState, servo: ToggleServo
 ) {
 	val isActive = servo.state == targetState
 
@@ -446,11 +459,45 @@ fun ToggleServoRangeSlider(
 		})
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SpeedRangeSlider(
+	speedRange: ClosedFloatingPointRange<Float>,
+	modifier: Modifier = Modifier,
+	onValueChange: (ClosedFloatingPointRange<Float>) -> Unit = {}
+) {
+	Text(
+		text = "Speed", style = Typography.labelLarge, modifier = Modifier.alpha(0.5f)
+	)
+	RangeSlider(
+		modifier = modifier.fillMaxWidth(),
+		value = speedRange,
+		valueRange = 0f..255f,
+		onValueChange = onValueChange,
+		steps = 255 / 5 - 1,
+		colors = SliderDefaults.colors(
+			activeTrackColor = White.copy(alpha = 0.25f),
+			inactiveTrackColor = Color.Transparent,
+			activeTickColor = White.copy(alpha = 0.5f),
+			inactiveTickColor = White.copy(alpha = 0.25f),
+		),
+		startThumb = {
+			ToggleServoRangeSliderThumb(
+				color = ControllerUI.SPEED_LOW_COLOR, value = speedRange.start
+			)
+		},
+		endThumb = {
+			ToggleServoRangeSliderThumb(
+				color = ControllerUI.SPEED_HIGH_COLOR, value = speedRange.endInclusive
+			)
+		})
+}
+
 @Composable
 fun ToggleServoRangeSliderThumb(color: Color, value: Float) {
 	Box(
 		modifier = Modifier
-			.size(4.dp, 32.dp)
+			.size(4.dp, 24.dp)
 			.background(color = color, shape = RoundedCornerShape(16.dp)),
 		contentAlignment = Alignment.BottomCenter
 	) {
@@ -458,7 +505,7 @@ fun ToggleServoRangeSliderThumb(color: Color, value: Float) {
 			text = value.toInt().toString(),
 			style = Typography.labelSmall,
 			modifier = Modifier
-				.offset(y = 20.dp)
+				.offset(y = 16.dp)
 				.wrapContentSize(unbounded = true)
 		)
 	}

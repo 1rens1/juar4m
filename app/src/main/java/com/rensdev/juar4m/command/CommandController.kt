@@ -26,6 +26,23 @@ class CommandController(
 		sendCommand(packed)
 	}
 
+	fun setSpeed(speed: Int) {
+		// Cap at 254 — arduino maps 254 -> 255 to avoid 0xFF header collision
+		val capped = speed.coerceIn(0, 254)
+		val packed = 0x8000 or (0x40 shl 8) or capped  // High byte 0xC0, bit 7 stripped = 0x40
+		sendCommand(packed)
+	}
+
+	/**
+	 * Sends current speed and servo A/B states to the device.
+	 * Call this on connect/reconnect to ensure the device is in sync with the app.
+	 */
+	fun syncState(speed: Int, servoAAngle: Int, servoBAngle: Int) {
+		setSpeed(speed)
+		setServo(1, servoAAngle)
+		setServo(2, servoBAngle)
+	}
+
 	fun drive(command: Int) {
 		currentDriveState.set(command)
 		onInput(command)

@@ -8,10 +8,10 @@ import com.rensdev.juar4m.bluetooth.BluetoothController
 import com.rensdev.juar4m.bluetooth.BluetoothStatus
 import com.rensdev.juar4m.command.CommandController
 import com.rensdev.juar4m.command.Commands
+import com.rensdev.juar4m.preferences.RangeState
 import com.rensdev.juar4m.preferences.UserPreferences
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.stopwatch.StopwatchManager
-import com.rensdev.juar4m.ui.components.controller.ServoState
 import com.rensdev.juar4m.utils.VibrationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-@Suppress("KotlinConstantConditions")
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 	///////////////////////// SNACKBAR //////////////////////////
 	data class UserMessage(val message: String, val withDismissAction: Boolean)
@@ -85,32 +84,46 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		userPreferences.setCornerDPadButtonsEnabled(enabled)
 	}
 
+	// Speed
+	val speedRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.speedRange.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SPEED_RANGE
+	)
+	val speedState: StateFlow<RangeState> = userPreferences.speedState.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SPEED_STATE
+	)
+
+	fun setSpeedRange(range: ClosedFloatingPointRange<Float>) =
+		viewModelScope.launch { userPreferences.setSpeedRange(range) }
+
+	fun setSpeedState(state: RangeState) =
+		viewModelScope.launch { userPreferences.setSpeedState(state) }
+
 	// Servo A
 	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_RANGE
 	)
-	val servoAState: StateFlow<ServoState> = userPreferences.servoAState.stateIn(
+	val servoAState: StateFlow<RangeState> = userPreferences.servoAState.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_STATE
 	)
 
 	fun setServoARange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoARange(range) }
 
-	fun setServoAState(state: ServoState) =
+	fun setServoAState(state: RangeState) =
 		viewModelScope.launch { userPreferences.setServoAState(state) }
 
 	// Servo B
 	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_RANGE
 	)
-	val servoBState: StateFlow<ServoState> = userPreferences.servoBState.stateIn(
+	val servoBState: StateFlow<RangeState> = userPreferences.servoBState.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_STATE
 	)
 
 	fun setServoBRange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoBRange(range) }
 
-	fun setServoBState(state: ServoState) =
+	fun setServoBState(state: RangeState) =
 		viewModelScope.launch { userPreferences.setServoBState(state) }
 
 	// Servo C
@@ -179,6 +192,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope.launch {
 			bluetoothStatus.collect { status ->
 				if (status == BluetoothStatus.Connected) {
+					val speed = when (speedState.value) {
+						RangeState.HIGH -> speedRange.value.endInclusive.toInt()
+						RangeState.LOW -> speedRange.value.start.toInt()
+					}
+					val servoAAngle = when (servoAState.value) {
+						RangeState.HIGH -> servoARange.value.endInclusive.toInt()
+						RangeState.LOW -> servoARange.value.start.toInt()
+					}
+					val servoBAngle = when (servoBState.value) {
+						RangeState.HIGH -> servoBRange.value.endInclusive.toInt()
+						RangeState.LOW -> servoBRange.value.start.toInt()
+					}
+					commandController.syncState(speed, servoAAngle, servoBAngle)
 					commandController.start()
 				} else {
 					commandController.stopTicker()

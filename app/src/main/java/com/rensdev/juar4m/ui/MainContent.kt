@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
@@ -49,6 +50,7 @@ import com.rensdev.juar4m.ui.components.MenuButton
 import com.rensdev.juar4m.ui.components.Stopwatch
 import com.rensdev.juar4m.ui.components.controller.DPadSection
 import com.rensdev.juar4m.ui.components.controller.ServoSection
+import com.rensdev.juar4m.ui.components.controller.SpeedSection
 import com.rensdev.juar4m.ui.theme.GeistFontFamily
 import com.rensdev.juar4m.ui.theme.GeistMonoFontFamily
 import com.rensdev.juar4m.ui.theme.Gray
@@ -112,15 +114,24 @@ fun MainContent(
 						.padding(horizontal = 16.dp)
 				) {
 					ServoSection(
-						viewModel = viewModel, modifier = Modifier
+						viewModel, modifier = Modifier
 							.weight(1f)
 							.fillMaxSize()
 					)
-					DPadSection(
-						viewModel = viewModel, modifier = Modifier
+					Box(
+						modifier = Modifier
 							.weight(1f)
 							.fillMaxSize()
-					)
+					) {
+						DPadSection(
+							viewModel
+						)
+						SpeedSection(
+							viewModel, modifier = Modifier
+								.align(Alignment.TopEnd)
+								.offset(y = 28.dp)
+						)
+					}
 				}
 
 				// Disabled overlay

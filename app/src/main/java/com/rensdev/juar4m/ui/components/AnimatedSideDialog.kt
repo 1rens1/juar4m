@@ -1,4 +1,4 @@
-package com.rensdev.juar4m.ui.components.controller
+package com.rensdev.juar4m.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween

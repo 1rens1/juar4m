@@ -278,6 +278,17 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 
 				isEditingRanges = !isEditingRanges
 				vibrator?.click()
+
+				val speedValue =
+					if (viewModel?.speedState?.value == RangeState.HIGH)
+						editSpeedRange.endInclusive
+					else
+						editSpeedRange.start
+				commandController?.syncState(
+					speedValue.toInt(),
+					ToggleServo(storedStateA, editRangeA).getValue(),
+					ToggleServo(storedStateB, editRangeB).getValue()
+				)
 			})
 		}
 	}

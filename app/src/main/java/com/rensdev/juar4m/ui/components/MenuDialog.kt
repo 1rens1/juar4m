@@ -92,6 +92,9 @@ fun MenuDialog(
 	val stopwatchModeEnabled by viewModel?.stopwatchModeEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_STOPWATCH_MODE_ENABLED
 	)
+	val servoAMode by viewModel?.servoAMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_MODE)
+	val servoBMode by viewModel?.servoBMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_MODE)
+	val servoCMode by viewModel?.servoCMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_MODE)
 
 	var showServoModeConfigDialog by remember { mutableStateOf(false) }
 
@@ -251,14 +254,20 @@ fun MenuDialog(
 										.verticalScroll(scrollState),
 									verticalArrangement = Arrangement.SpaceEvenly
 								) {
-									ServoModeSelect("Servo A", ServoMode.DISABLED, {})
-									ServoModeSelect("Servo B", ServoMode.DISABLED, {})
-									ServoModeSelect("Servo C", ServoMode.DISABLED, {})
+									ServoModeSelect("Servo A", servoAMode, { viewModel?.setServoAMode(it) })
+									ServoModeSelect("Servo B", servoBMode, { viewModel?.setServoBMode(it) })
+									ServoModeSelect("Servo C", servoCMode, { viewModel?.setServoCMode(it) })
 								}
-								Column(
-								) {
+								Column {
 									Surface(
-										modifier = Modifier.fillMaxWidth(), onClick = {},
+										modifier = Modifier.fillMaxWidth(),
+										onClick = {
+											viewModel?.apply {
+												setServoAMode(UserPreferencesDefaults.SERVO_A_MODE)
+												setServoBMode(UserPreferencesDefaults.SERVO_B_MODE)
+												setServoCMode(UserPreferencesDefaults.SERVO_C_MODE)
+											}
+										},
 										color = White.copy(alpha = 0.1f),
 										contentColor = White,
 										shape = ButtonDefaults.shape,
@@ -271,7 +280,11 @@ fun MenuDialog(
 										}
 									}
 									Surface(
-										modifier = Modifier.fillMaxWidth(), onClick = {},
+										modifier = Modifier.fillMaxWidth(),
+										onClick = {
+											// TODO: send servo config command
+											showServoModeConfigDialog = false
+										},
 										color = ButtonDefaults.buttonColors().containerColor,
 										contentColor = ButtonDefaults.buttonColors().contentColor,
 										shape = ButtonDefaults.shape,

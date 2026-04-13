@@ -16,6 +16,6 @@ object UserPreferencesDefaults {
 	val SERVO_B_MODE = ServoMode.POSITIONAL
 	val SERVO_B_RANGE = 0f..180f
 	val SERVO_B_STATE = RangeState.LOW
-	val SERVO_C_MODE = ServoMode.POSITIONAL
+	val SERVO_C_MODE = ServoMode.CONTINUOUS
 	const val SERVO_C_INVERTED = false
 }

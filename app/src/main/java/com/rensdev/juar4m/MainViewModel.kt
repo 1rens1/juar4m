@@ -9,6 +9,7 @@ import com.rensdev.juar4m.bluetooth.BluetoothStatus
 import com.rensdev.juar4m.command.CommandController
 import com.rensdev.juar4m.command.Commands
 import com.rensdev.juar4m.preferences.RangeState
+import com.rensdev.juar4m.preferences.ServoMode
 import com.rensdev.juar4m.preferences.UserPreferences
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.stopwatch.StopwatchManager
@@ -84,11 +85,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		userPreferences.setCornerDPadButtonsEnabled(enabled)
 	}
 
-	val dualContinuousEnabled = userPreferences.dualContinuousEnabled
-	fun setDualContinuousEnabled(enabled: Boolean) = viewModelScope.launch {
-		userPreferences.setDualContinuousEnabled(enabled)
-	}
-
 	// Speed
 	val speedRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.speedRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SPEED_RANGE
@@ -104,13 +100,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope.launch { userPreferences.setSpeedState(state) }
 
 	// Servo A
-	val servoARange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoARange.stateIn(
+	val servoAMode = userPreferences.servoAMode.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_MODE
+	)
+	val servoARange = userPreferences.servoARange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_RANGE
 	)
-	val servoAState: StateFlow<RangeState> = userPreferences.servoAState.stateIn(
+	val servoAState = userPreferences.servoAState.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_STATE
 	)
 
+	fun setServoAMode(mode: ServoMode) =
+		viewModelScope.launch { userPreferences.setServoAMode(mode) }
 	fun setServoARange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoARange(range) }
 
@@ -118,13 +119,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope.launch { userPreferences.setServoAState(state) }
 
 	// Servo B
-	val servoBRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.servoBRange.stateIn(
+	val servoBMode = userPreferences.servoBMode.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_MODE
+	)
+	val servoBRange= userPreferences.servoBRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_RANGE
 	)
-	val servoBState: StateFlow<RangeState> = userPreferences.servoBState.stateIn(
+	val servoBState = userPreferences.servoBState.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_STATE
 	)
 
+	fun setServoBMode(mode: ServoMode) =
+		viewModelScope.launch { userPreferences.setServoBMode(mode) }
 	fun setServoBRange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoBRange(range) }
 
@@ -132,10 +138,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope.launch { userPreferences.setServoBState(state) }
 
 	// Servo C
+	val servoCMode = userPreferences.servoCMode.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_MODE
+	)
 	val servoCInverted: StateFlow<Boolean> = userPreferences.servoCInverted.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_INVERTED
 	)
 
+	fun setServoCMode(mode: ServoMode) =
+		viewModelScope.launch { userPreferences.setServoCMode(mode) }
 	fun setServoCInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoCInverted(inverted) }
 

@@ -16,17 +16,13 @@ import kotlinx.coroutines.flow.map
 val Context.userPreferences: DataStore<Preferences> by preferencesDataStore("user_preferences")
 
 enum class RangeState(val value: Boolean) {
-	LOW(false),
-	HIGH(true)
+	LOW(false), HIGH(true)
 }
 
 enum class ServoMode(val value: Int) {
-	DISABLED(0),
-	POSITIONAL(1),
-	CONTINUOUS(2);
+	DISABLED(0), POSITIONAL(1), CONTINUOUS(2);
 
-	fun label(): String =
-		name.lowercase().replaceFirstChar { it.uppercase() }
+	fun label(): String = name.lowercase().replaceFirstChar { it.uppercase() }
 
 	companion object {
 		fun fromInt(value: Int) = entries.find { it.value == value } ?: POSITIONAL
@@ -48,16 +44,16 @@ class UserPreferences(private val context: Context) {
 		val SPEED_STATE = booleanPreferencesKey("speed.state") // true = HIGH, false = LOW
 
 		// Servo A
+		val SERVO_A_MODE = intPreferencesKey("servo.a.mode")
 		val SERVO_A_RANGE_LOW = floatPreferencesKey("servo.a.range_low")
 		val SERVO_A_RANGE_HIGH = floatPreferencesKey("servo.a.range_high")
 		val SERVO_A_STATE = booleanPreferencesKey("servo.a.state") // true = HIGH, false = LOW
-		val SERVO_A_MODE = intPreferencesKey("servo.a.mode")
 
 		// Servo B
+		val SERVO_B_MODE = intPreferencesKey("servo.b.mode")
 		val SERVO_B_RANGE_LOW = floatPreferencesKey("servo.b.range_low")
 		val SERVO_B_RANGE_HIGH = floatPreferencesKey("servo.b.range_high")
 		val SERVO_B_STATE = booleanPreferencesKey("servo.b.state") // true = HIGH, false = LOW
-		val SERVO_B_MODE = intPreferencesKey("servo.b.mode")
 
 
 		// Servo C
@@ -119,8 +115,7 @@ class UserPreferences(private val context: Context) {
 		APP_DUAL_CONTINUOUS_ENABLED, UserPreferencesDefaults.APP_DUAL_CONTINUOUS_ENABLED
 	)
 
-	suspend fun setDualContinuousEnabled(enabled: Boolean) =
-		set(APP_DUAL_CONTINUOUS_ENABLED, enabled)
+	suspend fun setDualContinuousEnabled(enabled: Boolean) = set(APP_DUAL_CONTINUOUS_ENABLED, enabled)
 
 
 	// Speed
@@ -144,6 +139,9 @@ class UserPreferences(private val context: Context) {
 	}
 
 	// Servo A
+	val servoAMode = get(SERVO_A_MODE, ServoMode.POSITIONAL.value).map { ServoMode.fromInt(it) }
+	suspend fun setServoAMode(mode: ServoMode) = set(SERVO_A_MODE, mode.value)
+
 	val servoAState = get(
 		SERVO_A_STATE, UserPreferencesDefaults.SERVO_A_STATE == RangeState.HIGH
 	).map { isHigh -> if (isHigh) RangeState.HIGH else RangeState.LOW }
@@ -164,6 +162,9 @@ class UserPreferences(private val context: Context) {
 	}
 
 	// Servo B
+	val servoBMode = get(SERVO_B_MODE, ServoMode.POSITIONAL.value).map { ServoMode.fromInt(it) }
+	suspend fun setServoBMode(mode: ServoMode) = set(SERVO_B_MODE, mode.value)
+
 	val servoBState = get(
 		SERVO_B_STATE, UserPreferencesDefaults.SERVO_B_STATE == RangeState.HIGH
 	).map { isHigh -> if (isHigh) RangeState.HIGH else RangeState.LOW }
@@ -184,6 +185,9 @@ class UserPreferences(private val context: Context) {
 	}
 
 	// Servo C
+	val servoCMode = get(SERVO_C_MODE, ServoMode.POSITIONAL.value).map { ServoMode.fromInt(it) }
+	suspend fun setServoCMode(mode: ServoMode) = set(SERVO_C_MODE, mode.value)
+
 	val servoCInverted = get(SERVO_C_INVERTED, false)
 	suspend fun setServoCInverted(inverted: Boolean) = set(SERVO_C_INVERTED, inverted)
 

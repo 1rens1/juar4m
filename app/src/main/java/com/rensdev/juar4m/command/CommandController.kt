@@ -1,5 +1,6 @@
 package com.rensdev.juar4m.command
 
+import com.rensdev.juar4m.preferences.ServoMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,13 +35,35 @@ class CommandController(
 	}
 
 	/**
-	 * Sends current speed and servo A/B states to the device.
-	 * Call this on connect/reconnect to ensure the device is in sync with the app.
+	 * Sends servo mode config to the device.
+	 * Bit 0 = Servo A continuous, Bit 1 = Servo B continuous, Bit 2 = Servo C continuous.
+	 * High byte 0xA0 with bit 7 set, stripped = 0x20.
 	 */
-	fun syncState(speed: Int, servoAAngle: Int, servoBAngle: Int) {
+	fun sendServoConfig(servoAMode: ServoMode, servoBMode: ServoMode, servoCMode: ServoMode) {
+		var mask = 0
+		if (servoAMode == ServoMode.CONTINUOUS) mask = mask or 0x01
+		if (servoBMode == ServoMode.CONTINUOUS) mask = mask or 0x02
+		if (servoCMode == ServoMode.CONTINUOUS) mask = mask or 0x04
+		val packed = 0x8000 or (0x20 shl 8) or mask
+		sendCommand(packed)
+	}
+
+	/**
+	 * Sends servo config, speed, and all servo states to the device.
+	 * Call this on connect/reconnect or after config save.
+	 */
+	fun syncState(
+		speed: Int,
+		servoAMode: ServoMode, servoAAngle: Int,
+		servoBMode: ServoMode, servoBAngle: Int,
+		servoCMode: ServoMode, servoCAngle: Int
+	) {
+		sendServoConfig(servoAMode, servoBMode, servoCMode)
 		setSpeed(speed)
 		setServo(1, servoAAngle)
 		setServo(2, servoBAngle)
+		// Positional: sync angle. Continuous: send stop (90)
+		setServo(3, if (servoCMode == ServoMode.POSITIONAL) servoCAngle else 90)
 	}
 
 	fun drive(command: Int) {

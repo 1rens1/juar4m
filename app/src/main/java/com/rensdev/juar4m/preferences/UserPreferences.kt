@@ -59,6 +59,9 @@ class UserPreferences(private val context: Context) {
 		// Servo C
 		val SERVO_C_MODE = intPreferencesKey("servo.c.mode")
 		val SERVO_C_INVERTED = booleanPreferencesKey("servo.c.inverted")
+		val SERVO_C_RANGE_LOW = floatPreferencesKey("servo.c.range_low")
+		val SERVO_C_RANGE_HIGH = floatPreferencesKey("servo.c.range_high")
+		val SERVO_C_STATE = booleanPreferencesKey("servo.c.state") // true = HIGH, false = LOW
 
 		// Stopwatch
 		val STOPWATCH_PB = longPreferencesKey("stopwatch.pb")
@@ -185,11 +188,30 @@ class UserPreferences(private val context: Context) {
 	}
 
 	// Servo C
-	val servoCMode = get(SERVO_C_MODE, ServoMode.POSITIONAL.value).map { ServoMode.fromInt(it) }
+	val servoCMode = get(SERVO_C_MODE, UserPreferencesDefaults.SERVO_C_MODE.value).map { ServoMode.fromInt(it) }
 	suspend fun setServoCMode(mode: ServoMode) = set(SERVO_C_MODE, mode.value)
 
 	val servoCInverted = get(SERVO_C_INVERTED, false)
 	suspend fun setServoCInverted(inverted: Boolean) = set(SERVO_C_INVERTED, inverted)
+
+	val servoCState = get(
+		SERVO_C_STATE, UserPreferencesDefaults.SERVO_C_STATE == RangeState.HIGH
+	).map { isHigh -> if (isHigh) RangeState.HIGH else RangeState.LOW }
+
+	suspend fun setServoCState(state: RangeState) = set(SERVO_C_STATE, state == RangeState.HIGH)
+
+	val servoCRange = context.userPreferences.data.map { prefs ->
+		val start = prefs[SERVO_C_RANGE_LOW] ?: UserPreferencesDefaults.SERVO_C_RANGE.start
+		val end = prefs[SERVO_C_RANGE_HIGH] ?: UserPreferencesDefaults.SERVO_C_RANGE.endInclusive
+		start..end
+	}
+
+	suspend fun setServoCRange(range: ClosedFloatingPointRange<Float>) {
+		context.userPreferences.edit { prefs ->
+			prefs[SERVO_C_RANGE_LOW] = range.start
+			prefs[SERVO_C_RANGE_HIGH] = range.endInclusive
+		}
+	}
 
 	val stopwatchPB = get(STOPWATCH_PB, null)
 	suspend fun setStopwatchPB(pb: Long?) = set(STOPWATCH_PB, pb)

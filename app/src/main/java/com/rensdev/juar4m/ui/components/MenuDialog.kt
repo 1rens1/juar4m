@@ -97,6 +97,9 @@ fun MenuDialog(
 	val servoCMode by viewModel?.servoCMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_MODE)
 
 	var showServoModeConfigDialog by remember { mutableStateOf(false) }
+	var editServoAMode by remember(servoAMode) { mutableStateOf(servoAMode) }
+	var editServoBMode by remember(servoBMode) { mutableStateOf(servoBMode) }
+	var editServoCMode by remember(servoCMode) { mutableStateOf(servoCMode) }
 
 	AnimatedSideDialog(onDismissRequest = onDismissRequest) { dismiss ->
 		Surface(
@@ -209,9 +212,9 @@ fun MenuDialog(
 
 	val scrollState = rememberScrollState()
 
-	if (!showServoModeConfigDialog) {
+	if (showServoModeConfigDialog) {
 		Dialog(
-			onDismissRequest = {},
+			onDismissRequest = { showServoModeConfigDialog = false },
 			properties = DialogProperties(
 				usePlatformDefaultWidth = false
 			),
@@ -254,19 +257,17 @@ fun MenuDialog(
 										.verticalScroll(scrollState),
 									verticalArrangement = Arrangement.SpaceEvenly
 								) {
-									ServoModeSelect("Servo A", servoAMode, { viewModel?.setServoAMode(it) })
-									ServoModeSelect("Servo B", servoBMode, { viewModel?.setServoBMode(it) })
-									ServoModeSelect("Servo C", servoCMode, { viewModel?.setServoCMode(it) })
+									ServoModeSelect("Servo A", editServoAMode, { editServoAMode = it })
+									ServoModeSelect("Servo B", editServoBMode, { editServoBMode = it })
+									ServoModeSelect("Servo C", editServoCMode, { editServoCMode = it })
 								}
 								Column {
 									Surface(
 										modifier = Modifier.fillMaxWidth(),
 										onClick = {
-											viewModel?.apply {
-												setServoAMode(UserPreferencesDefaults.SERVO_A_MODE)
-												setServoBMode(UserPreferencesDefaults.SERVO_B_MODE)
-												setServoCMode(UserPreferencesDefaults.SERVO_C_MODE)
-											}
+											editServoAMode = UserPreferencesDefaults.SERVO_A_MODE
+											editServoBMode = UserPreferencesDefaults.SERVO_B_MODE
+											editServoCMode = UserPreferencesDefaults.SERVO_C_MODE
 										},
 										color = White.copy(alpha = 0.1f),
 										contentColor = White,
@@ -282,7 +283,14 @@ fun MenuDialog(
 									Surface(
 										modifier = Modifier.fillMaxWidth(),
 										onClick = {
-											// TODO: send servo config command
+											viewModel?.apply {
+												setServoAMode(editServoAMode)
+												setServoBMode(editServoBMode)
+												setServoCMode(editServoCMode)
+												commandController.sendServoConfig(
+													editServoAMode, editServoBMode, editServoCMode
+												)
+											}
 											showServoModeConfigDialog = false
 										},
 										color = ButtonDefaults.buttonColors().containerColor,

@@ -117,6 +117,7 @@ fun MainContent(
 						viewModel, modifier = Modifier
 							.weight(1f)
 							.fillMaxSize()
+							.padding(vertical = 48.dp)
 					)
 					Box(
 						modifier = Modifier

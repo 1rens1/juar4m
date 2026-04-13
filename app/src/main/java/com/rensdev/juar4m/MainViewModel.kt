@@ -144,11 +144,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	val servoCInverted: StateFlow<Boolean> = userPreferences.servoCInverted.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_INVERTED
 	)
+	val servoCRange = userPreferences.servoCRange.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_RANGE
+	)
+	val servoCState = userPreferences.servoCState.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_STATE
+	)
 
 	fun setServoCMode(mode: ServoMode) =
 		viewModelScope.launch { userPreferences.setServoCMode(mode) }
 	fun setServoCInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoCInverted(inverted) }
+	fun setServoCRange(range: ClosedFloatingPointRange<Float>) =
+		viewModelScope.launch { userPreferences.setServoCRange(range) }
+	fun setServoCState(state: RangeState) =
+		viewModelScope.launch { userPreferences.setServoCState(state) }
 
 	///////////////////////// VIBRATOR //////////////////////////
 	val vibrator = VibrationManager(application.applicationContext)
@@ -220,7 +230,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 						RangeState.HIGH -> servoBRange.value.endInclusive.toInt()
 						RangeState.LOW -> servoBRange.value.start.toInt()
 					}
-					commandController.syncState(speed, servoAAngle, servoBAngle)
+					val servoCAngle = when (servoCState.value) {
+						RangeState.HIGH -> servoCRange.value.endInclusive.toInt()
+						RangeState.LOW -> servoCRange.value.start.toInt()
+					}
+					commandController.syncState(
+						speed,
+						servoAMode.value, servoAAngle,
+						servoBMode.value, servoBAngle,
+						servoCMode.value, servoCAngle
+					)
 					commandController.start()
 				} else {
 					commandController.stopTicker()

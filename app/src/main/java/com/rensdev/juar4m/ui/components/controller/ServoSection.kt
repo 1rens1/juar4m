@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -67,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.command.CommandController
 import com.rensdev.juar4m.preferences.RangeState
+import com.rensdev.juar4m.preferences.ServoMode
 import com.rensdev.juar4m.preferences.UserPreferencesDefaults
 import com.rensdev.juar4m.preferences.collectAsStateOrFallback
 import com.rensdev.juar4m.ui.theme.Black
@@ -78,6 +80,38 @@ import kotlin.math.roundToInt
 
 val SERVO_ANGLE_BOUNDS = 0f..180f
 const val DEGREE_SYMBOL = '\u00B0'
+
+/**
+ * Servo slot in the 2-unit-tall grid.
+ * POSITIONAL = 1 unit, CONTINUOUS = 2 units.
+ */
+data class ServoGridItem(
+	val servoId: Int, // 1=A, 2=B, 3=C
+	val label: AnnotatedString,
+	val mode: ServoMode,
+	val units: Int, // 1 (positional) or 2 (continuous)
+)
+
+/**
+ * Packs items into columns of height 2 units, top-to-bottom then left-to-right.
+ * An item that doesn't fit the remaining space in the current column starts a new one.
+ */
+fun packServoColumns(items: List<ServoGridItem>): List<List<ServoGridItem>> {
+	val result = mutableListOf<MutableList<ServoGridItem>>()
+	var col = mutableListOf<ServoGridItem>()
+	var remaining = 2
+	for (item in items) {
+		if (item.units > remaining) {
+			if (col.isNotEmpty()) result += col
+			col = mutableListOf()
+			remaining = 2
+		}
+		col += item
+		remaining -= item.units
+	}
+	if (col.isNotEmpty()) result += col
+	return result
+}
 
 data class ToggleServo(
 	val state: RangeState,
@@ -119,87 +153,183 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	val vibrator = viewModel?.vibrator
 	val commandController = viewModel?.commandController
 
-	var isEditingRanges by rememberSaveable { mutableStateOf(false) }
+	var isEditingServos by rememberSaveable { mutableStateOf(false) }
 
+	// Stored prefs
+	val storedServoAMode by viewModel?.servoAMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_MODE)
 	val storedRangeA by viewModel?.servoARange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_RANGE)
 	val storedStateA by viewModel?.servoAState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_A_STATE)
 
+	val storedServoBMode by viewModel?.servoBMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_MODE)
 	val storedRangeB by viewModel?.servoBRange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_RANGE)
 	val storedStateB by viewModel?.servoBState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_B_STATE)
 
+	val storedServoCMode by viewModel?.servoCMode.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_MODE)
 	val servoCInverted by viewModel?.servoCInverted.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_INVERTED)
-
-	var editRangeA by remember { mutableStateOf(storedRangeA) }
-	var editRangeB by remember { mutableStateOf(storedRangeB) }
+	val storedRangeC by viewModel?.servoCRange.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_RANGE)
+	val storedStateC by viewModel?.servoCState.collectAsStateOrFallback(UserPreferencesDefaults.SERVO_C_STATE)
 
 	val storedSpeedRange by viewModel?.speedRange.collectAsStateOrFallback(UserPreferencesDefaults.SPEED_RANGE)
 
+	// Edit state (mirrors stored, mutated locally until save)
+	var editRangeA by remember { mutableStateOf(storedRangeA) }
+	var editRangeB by remember { mutableStateOf(storedRangeB) }
+	var editRangeC by remember { mutableStateOf(storedRangeC) }
 	var editSpeedRange by remember { mutableStateOf(storedSpeedRange) }
 
-
-	LaunchedEffect(storedRangeA, storedRangeB, storedSpeedRange) {
+	LaunchedEffect(storedRangeA, storedRangeB, storedRangeC, storedSpeedRange) {
 		editRangeA = storedRangeA
 		editRangeB = storedRangeB
+		editRangeC = storedRangeC
 		editSpeedRange = storedSpeedRange
 	}
 
 	val servoA = ToggleServo(storedStateA, editRangeA)
 	val servoB = ToggleServo(storedStateB, editRangeB)
+	val servoC = ToggleServo(storedStateC, editRangeC)
 
 	val servoALabel = remember { servoLabel("A") }
 	val servoBLabel = remember { servoLabel("B") }
+	val servoCLabel = remember { servoLabel("C") }
+
+	// Pack servos into 2-unit columns
+	val servoColumns = remember(storedServoAMode, storedServoBMode, storedServoCMode) {
+		packServoColumns(
+			listOf(
+				ServoGridItem(
+					1, servoALabel, storedServoAMode, if (storedServoAMode == ServoMode.POSITIONAL) 1 else 2
+				),
+				ServoGridItem(
+					2, servoBLabel, storedServoBMode, if (storedServoBMode == ServoMode.POSITIONAL) 1 else 2
+				),
+				ServoGridItem(
+					3, servoCLabel, storedServoCMode, if (storedServoCMode == ServoMode.POSITIONAL) 1 else 2
+				),
+			)
+		)
+	}
 
 	Column(
 		modifier = modifier,
 		verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
 	) {
-		Row(
-			horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top
-		) {
-			Column(
-				verticalArrangement = Arrangement.SpaceBetween,
+		if (!isEditingServos) {
+			Row(
+				horizontalArrangement = Arrangement.spacedBy(16.dp),
+				verticalAlignment = Alignment.CenterVertically,
 				modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
 			) {
-				ToggleServoButton(label = servoALabel, servo = servoA, onToggle = {
-					val newState = if (servoA.state == RangeState.LOW) RangeState.HIGH else RangeState.LOW
-					viewModel?.setServoAState(newState)
-					vibrator?.click()
-					commandController?.setServo(1, servoA.copy(state = newState).getValue())
-				})
-				ToggleServoButton(label = servoBLabel, servo = servoB, onToggle = {
-					val newState = if (servoB.state == RangeState.LOW) RangeState.HIGH else RangeState.LOW
-					viewModel?.setServoBState(newState)
-					vibrator?.click()
-					commandController?.setServo(2, servoB.copy(state = newState).getValue())
-				})
-			}
+				for (col in servoColumns) {
+					Column(modifier = Modifier.fillMaxHeight()) {
+						for (item in col) {
+							Box(modifier = Modifier.weight(item.units.toFloat())) {
+								when (item.mode) {
+									ServoMode.POSITIONAL -> {
+										val servo = when (item.servoId) {
+											1 -> servoA; 2 -> servoB; else -> servoC
+										}
+										ToggleServoButton(
+											label = item.label, servo = servo, onToggle = {
+												val newState =
+													if (servo.state == RangeState.LOW) RangeState.HIGH else RangeState.LOW
+												when (item.servoId) {
+													1 -> viewModel?.setServoAState(newState)
+													2 -> viewModel?.setServoBState(newState)
+													else -> viewModel?.setServoCState(newState)
+												}
+												vibrator?.click()
+												commandController?.setServo(
+													item.servoId, servo.copy(state = newState).getValue()
+												)
+											})
+									}
 
-			if (!isEditingRanges) {
-				ServoCControls(
-					vibrator = vibrator,
-					commandController = commandController,
-					inverted = servoCInverted
-				)
-			} else {
-				Column(
-					verticalArrangement = Arrangement.spacedBy((-2).dp),
-					modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
-				) {
-					ToggleServoRangeSlider(servo = servoA, label = servoALabel, onValueChange = {
-						editRangeA = it
-					})
-					Spacer(modifier = Modifier.height(20.dp))
-					ToggleServoRangeSlider(servo = servoB, label = servoBLabel, onValueChange = {
-						editRangeB = it
-					})
-					Spacer(modifier = Modifier.height(20.dp))
-					SpeedRangeSlider(
-						speedRange = editSpeedRange,
-						onValueChange = {
-							editSpeedRange = it
+									ServoMode.CONTINUOUS -> {
+										ServoCControls(
+											modifier = Modifier.fillMaxHeight(),
+											vibrator = vibrator,
+											commandController = commandController,
+											servoId = item.servoId,
+											label = item.label,
+											inverted = item.servoId == 3 && servoCInverted
+										)
+									}
+
+									else -> {}
+								}
+							}
 						}
+					}
+				}
+			}
+		}
+
+		if (isEditingServos) {
+			Column(
+				modifier = Modifier
+					.weight(1f)
+					.verticalScroll(rememberScrollState()),
+				verticalArrangement = Arrangement.spacedBy(8.dp)
+			) {
+				if (storedServoAMode == ServoMode.POSITIONAL) {
+					ToggleServoRangeSlider(
+						servo = servoA.copy(range = editRangeA),
+						label = servoALabel,
+						onValueChange = { editRangeA = it }
 					)
 				}
+				if (storedServoBMode == ServoMode.POSITIONAL) {
+					ToggleServoRangeSlider(
+						servo = servoB.copy(range = editRangeB),
+						label = servoBLabel,
+						onValueChange = { editRangeB = it }
+					)
+				}
+				if (storedServoCMode == ServoMode.POSITIONAL) {
+					ToggleServoRangeSlider(
+						servo = servoC.copy(range = editRangeC),
+						label = servoCLabel,
+						onValueChange = { editRangeC = it }
+					)
+				} else if (storedServoCMode == ServoMode.CONTINUOUS) {
+					Row(
+						verticalAlignment = Alignment.CenterVertically,
+						horizontalArrangement = Arrangement.spacedBy((-8).dp)
+					) {
+						Switch(
+							modifier = Modifier
+								.rotate(90f)
+								.scale(0.7f)
+								.height(ButtonDefaults.MinHeight),
+							checked = servoCInverted,
+							onCheckedChange = {
+								viewModel?.setServoCInverted(it)
+								vibrator?.click()
+							},
+							thumbContent = {
+								Icon(
+									imageVector = Icons.Default.ArrowDropUp,
+									contentDescription = null,
+									modifier = Modifier.rotate(if (!servoCInverted) -90f else 90f),
+									tint = White
+								)
+							},
+							colors = SwitchDefaults.colors(
+								uncheckedTrackColor = ControllerUI.SERVO_C_DOWN_COLOR.copy(alpha = 0.15f),
+								checkedTrackColor = ControllerUI.SERVO_C_DOWN_COLOR.copy(alpha = 0.15f),
+								uncheckedThumbColor = colorMix(Black, ControllerUI.SERVO_C_UP_COLOR, 0.15f),
+								checkedThumbColor = colorMix(Black, ControllerUI.SERVO_C_UP_COLOR, 0.15f),
+								uncheckedBorderColor = White.copy(alpha = 0.15f),
+								checkedBorderColor = White.copy(alpha = 0.15f),
+							)
+						)
+						Text("Invert Servo C", style = Typography.labelMedium)
+					}
+				}
+				SpeedRangeSlider(
+					speedRange = editSpeedRange,
+					onValueChange = { editSpeedRange = it }
+				)
 			}
 		}
 
@@ -208,40 +338,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 			verticalAlignment = Alignment.CenterVertically,
 			modifier = Modifier.fillMaxWidth()
 		) {
-			if (isEditingRanges) {
-				Row(
-					verticalAlignment = Alignment.CenterVertically,
-					horizontalArrangement = Arrangement.spacedBy((-8).dp)
-				) {
-					Switch(
-						modifier = Modifier
-							.rotate(90f)
-							.scale(0.7f)
-							.height(ButtonDefaults.MinHeight),
-						checked = servoCInverted,
-						onCheckedChange = {
-							viewModel?.setServoCInverted(it)
-							vibrator?.click()
-						},
-						thumbContent = {
-							Icon(
-								imageVector = Icons.Default.ArrowDropUp,
-								contentDescription = null,
-								modifier = Modifier.rotate(if (!servoCInverted) -90f else 90f),
-								tint = White
-							)
-						},
-						colors = SwitchDefaults.colors(
-							uncheckedTrackColor = ControllerUI.SERVO_C_DOWN_COLOR.copy(alpha = 0.15f),
-							checkedTrackColor = ControllerUI.SERVO_C_DOWN_COLOR.copy(alpha = 0.15f),
-							uncheckedThumbColor = colorMix(Black, ControllerUI.SERVO_C_UP_COLOR, 0.15f),
-							checkedThumbColor = colorMix(Black, ControllerUI.SERVO_C_UP_COLOR, 0.15f),
-							uncheckedBorderColor = White.copy(alpha = 0.15f),
-							checkedBorderColor = White.copy(alpha = 0.15f),
-						)
-					)
-					Text("Invert Servo C", style = Typography.labelMedium)
-				}
+			if (isEditingServos) {
 				Surface(
 					modifier = Modifier
 						.height(ButtonDefaults.MinHeight)
@@ -250,46 +347,44 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 							vibrator?.click()
 							editRangeA = UserPreferencesDefaults.SERVO_A_RANGE
 							editRangeB = UserPreferencesDefaults.SERVO_B_RANGE
+							editRangeC = UserPreferencesDefaults.SERVO_C_RANGE
 							editSpeedRange = UserPreferencesDefaults.SPEED_RANGE
 							viewModel?.setServoCInverted(UserPreferencesDefaults.SERVO_C_INVERTED)
-						},
-					shape = ButtonDefaults.shape,
-					color = White.copy(alpha = 0.1f),
-					contentColor = White
+						}, shape = ButtonDefaults.shape, color = White.copy(alpha = 0.1f), contentColor = White
 				) {
 					Box(
 						modifier = Modifier.padding(ButtonDefaults.ContentPadding),
 						contentAlignment = Alignment.Center
 					) {
-						Text(
-							text = "Reset to defaults",
-							style = Typography.labelLarge
-						)
+						Text(text = "Reset to defaults", style = Typography.labelLarge)
 					}
 				}
 			}
-			EditServoRangeButton(isEditingRanges = isEditingRanges, viewModel = viewModel, onEdit = {
-				isEditingRanges = !isEditingRanges
-				vibrator?.click()
-			}, onSave = {
-				viewModel?.setServoARange(editRangeA)
-				viewModel?.setServoBRange(editRangeB)
-				viewModel?.setSpeedRange(editSpeedRange)
-
-				isEditingRanges = !isEditingRanges
-				vibrator?.click()
-
-				val speedValue =
-					if (viewModel?.speedState?.value == RangeState.HIGH)
-						editSpeedRange.endInclusive
-					else
-						editSpeedRange.start
-				commandController?.syncState(
-					speedValue.toInt(),
-					ToggleServo(storedStateA, editRangeA).getValue(),
-					ToggleServo(storedStateB, editRangeB).getValue()
-				)
-			})
+			EditServoRangeButton(
+				isEditingServos = isEditingServos,
+				viewModel = viewModel,
+				onEdit = {
+					isEditingServos = !isEditingServos
+					vibrator?.click()
+				},
+				onSave = {
+					viewModel?.setServoARange(editRangeA)
+					viewModel?.setServoBRange(editRangeB)
+					viewModel?.setServoCRange(editRangeC)
+					viewModel?.setSpeedRange(editSpeedRange)
+					isEditingServos = !isEditingServos
+					vibrator?.click()
+					val speedValue =
+						if (viewModel?.speedState?.value == RangeState.HIGH) editSpeedRange.endInclusive
+						else editSpeedRange.start
+					commandController?.syncState(
+						speedValue.toInt(),
+						storedServoAMode, ToggleServo(storedStateA, editRangeA).getValue(),
+						storedServoBMode, ToggleServo(storedStateB, editRangeB).getValue(),
+						storedServoCMode, ToggleServo(storedStateC, editRangeC).getValue()
+					)
+				}
+			)
 		}
 	}
 }
@@ -350,12 +445,12 @@ fun ToggleServoButton(
 				ToggleServoHighLowIndicator(
 					modifier = Modifier.weight(1f),
 					targetState = RangeState.LOW,
-					servo = servo,
+					servo = servo
 				)
 				ToggleServoHighLowIndicator(
 					modifier = Modifier.weight(1f),
 					targetState = RangeState.HIGH,
-					servo = servo,
+					servo = servo
 				)
 			}
 		}
@@ -402,12 +497,12 @@ fun Modifier.vertical() = layout { measurable, constraints ->
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EditServoRangeButton(
-	viewModel: MainViewModel?, isEditingRanges: Boolean, onEdit: () -> Unit, onSave: () -> Unit
+	viewModel: MainViewModel?, isEditingServos: Boolean, onEdit: () -> Unit, onSave: () -> Unit
 ) {
 	val backgroundColor =
-		if (isEditingRanges) IconButtonDefaults.filledIconButtonColors().containerColor
+		if (isEditingServos) IconButtonDefaults.filledIconButtonColors().containerColor
 		else White.copy(alpha = 0.1f)
-	val contentColor = if (isEditingRanges) IconButtonDefaults.filledIconButtonColors().contentColor
+	val contentColor = if (isEditingServos) IconButtonDefaults.filledIconButtonColors().contentColor
 	else White.copy(alpha = 0.8f)
 
 	Surface(
@@ -416,7 +511,7 @@ fun EditServoRangeButton(
 			.clip(IconButtonDefaults.filledShape)
 			.combinedClickable(
 				onClick = {
-					if (isEditingRanges) onSave()
+					if (isEditingServos) onSave()
 					else viewModel?.showSnackbar("Long press to edit")
 				},
 				onLongClick = { onEdit() },
@@ -427,7 +522,7 @@ fun EditServoRangeButton(
 	) {
 		Box(contentAlignment = Alignment.Center) {
 			Icon(
-				imageVector = if (isEditingRanges) Icons.Default.Save else Icons.Default.Edit,
+				imageVector = if (isEditingServos) Icons.Default.Save else Icons.Default.Edit,
 				contentDescription = null,
 				modifier = Modifier.size(24.dp)
 			)
@@ -443,31 +538,31 @@ fun ToggleServoRangeSlider(
 	modifier: Modifier = Modifier,
 	onValueChange: (ClosedFloatingPointRange<Float>) -> Unit = {}
 ) {
-	Text(
-		text = label, style = Typography.labelLarge, modifier = Modifier.alpha(0.5f)
-	)
-	RangeSlider(
-		modifier = modifier.fillMaxWidth(),
-		value = servo.range,
-		valueRange = SERVO_ANGLE_BOUNDS,
-		onValueChange = onValueChange,
-		steps = 180 / 5 - 1,
-		colors = SliderDefaults.colors(
-			activeTrackColor = White.copy(alpha = 0.25f),
-			inactiveTrackColor = Color.Transparent,
-			activeTickColor = White.copy(alpha = 0.5f),
-			inactiveTickColor = White.copy(alpha = 0.25f),
-		),
-		startThumb = {
-			ToggleServoRangeSliderThumb(
-				color = ControllerUI.SERVO_TOGGLE_LOW_COLOR, value = servo.range.start
-			)
-		},
-		endThumb = {
-			ToggleServoRangeSliderThumb(
-				color = ControllerUI.SERVO_TOGGLE_HIGH_COLOR, value = servo.range.endInclusive
-			)
-		})
+	Column {
+		Text(text = label, style = Typography.labelLarge, modifier = Modifier.alpha(0.5f))
+		RangeSlider(
+			modifier = modifier.fillMaxWidth(),
+			value = servo.range,
+			valueRange = SERVO_ANGLE_BOUNDS,
+			onValueChange = onValueChange,
+			steps = 180 / 5 - 1,
+			colors = SliderDefaults.colors(
+				activeTrackColor = White.copy(alpha = 0.25f),
+				inactiveTrackColor = Color.Transparent,
+				activeTickColor = White.copy(alpha = 0.5f),
+				inactiveTickColor = White.copy(alpha = 0.25f),
+			),
+			startThumb = {
+				ToggleServoRangeSliderThumb(
+					color = ControllerUI.SERVO_TOGGLE_LOW_COLOR, value = servo.range.start
+				)
+			},
+			endThumb = {
+				ToggleServoRangeSliderThumb(
+					color = ControllerUI.SERVO_TOGGLE_HIGH_COLOR, value = servo.range.endInclusive
+				)
+			})
+	}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -477,9 +572,7 @@ fun SpeedRangeSlider(
 	modifier: Modifier = Modifier,
 	onValueChange: (ClosedFloatingPointRange<Float>) -> Unit = {}
 ) {
-	Text(
-		text = "Speed", style = Typography.labelLarge, modifier = Modifier.alpha(0.5f)
-	)
+	Text(text = "Speed", style = Typography.labelLarge, modifier = Modifier.alpha(0.5f))
 	RangeSlider(
 		modifier = modifier.fillMaxWidth(),
 		value = speedRange,
@@ -493,9 +586,7 @@ fun SpeedRangeSlider(
 			inactiveTickColor = White.copy(alpha = 0.25f),
 		),
 		startThumb = {
-			ToggleServoRangeSliderThumb(
-				color = ControllerUI.SPEED_LOW_COLOR, value = speedRange.start
-			)
+			ToggleServoRangeSliderThumb(color = ControllerUI.SPEED_LOW_COLOR, value = speedRange.start)
 		},
 		endThumb = {
 			ToggleServoRangeSliderThumb(
@@ -527,20 +618,21 @@ fun ServoCControls(
 	modifier: Modifier = Modifier,
 	vibrator: VibrationManager?,
 	commandController: CommandController?,
+	servoId: Int = 3,
+	label: AnnotatedString = servoLabel("C"),
 	inverted: Boolean = false
 ) {
 	var command by remember { mutableStateOf("RELEASED") }
 	val density = LocalDensity.current
 	val buttonSize = ControllerUI.SERVO_BUTTON_SIZE
-	val servoCLabel = remember { servoLabel("C") }
 
 	Row(
-		modifier = modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT),
+		modifier = modifier,
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(8.dp)
 	) {
 		Text(
-			text = servoCLabel,
+			text = label,
 			modifier = Modifier
 				.vertical()
 				.rotate(-90f)
@@ -569,17 +661,15 @@ fun ServoCControls(
 								btmBounds.contains(pos) -> "DOWN"
 								else -> "RELEASED"
 							}
-
 							if (command != newCommand) {
 								command = newCommand
 								if (command != "RELEASED") vibrator?.strongClick()
-
 								val angle = when (command) {
 									"UP" -> 180
 									"DOWN" -> 0
 									else -> 90
 								}
-								commandController?.setServo(3, angle)
+								commandController?.setServo(servoId, angle)
 							}
 						}
 
@@ -592,7 +682,7 @@ fun ServoCControls(
 
 						if (command != "RELEASED") {
 							command = "RELEASED"
-							commandController?.setServo(3, 90)
+							commandController?.setServo(servoId, 90)
 						}
 					}
 				}) {

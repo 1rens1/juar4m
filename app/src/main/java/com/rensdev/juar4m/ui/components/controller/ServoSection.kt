@@ -182,7 +182,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				)
 			} else {
 				Column(
-					verticalArrangement = Arrangement.spacedBy(-2.dp),
+					verticalArrangement = Arrangement.spacedBy((-2).dp),
 					modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)
 				) {
 					ToggleServoRangeSlider(servo = servoA, label = servoALabel, onValueChange = {
@@ -596,12 +596,12 @@ fun ServoCControls(
 						}
 					}
 				}) {
-			ServoCButton(
+			ContinuousServoButton(
 				color = ControllerUI.SERVO_C_UP_COLOR,
 				iconImageVector = Icons.Default.ArrowDropUp,
 				isActive = command == "UP"
 			)
-			ServoCButton(
+			ContinuousServoButton(
 				color = ControllerUI.SERVO_C_DOWN_COLOR,
 				iconImageVector = Icons.Default.ArrowDropDown,
 				isActive = command == "DOWN"
@@ -611,7 +611,7 @@ fun ServoCControls(
 }
 
 @Composable
-fun ServoCButton(
+fun ContinuousServoButton(
 	modifier: Modifier = Modifier, color: Color, iconImageVector: ImageVector, isActive: Boolean
 ) {
 	Surface(

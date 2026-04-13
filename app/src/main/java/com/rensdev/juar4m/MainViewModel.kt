@@ -84,6 +84,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		userPreferences.setCornerDPadButtonsEnabled(enabled)
 	}
 
+	val dualContinuousEnabled = userPreferences.dualContinuousEnabled
+	fun setDualContinuousEnabled(enabled: Boolean) = viewModelScope.launch {
+		userPreferences.setDualContinuousEnabled(enabled)
+	}
+
 	// Speed
 	val speedRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.speedRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SPEED_RANGE

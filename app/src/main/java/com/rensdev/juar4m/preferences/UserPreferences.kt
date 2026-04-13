@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -19,6 +20,19 @@ enum class RangeState(val value: Boolean) {
 	HIGH(true)
 }
 
+enum class ServoMode(val value: Int) {
+	DISABLED(0),
+	POSITIONAL(1),
+	CONTINUOUS(2);
+
+	fun label(): String =
+		name.lowercase().replaceFirstChar { it.uppercase() }
+
+	companion object {
+		fun fromInt(value: Int) = entries.find { it.value == value } ?: POSITIONAL
+	}
+}
+
 class UserPreferences(private val context: Context) {
 	companion object {
 		val LAST_DEVICE_ADDRESS = stringPreferencesKey("bluetooth.last_device_address")
@@ -26,6 +40,7 @@ class UserPreferences(private val context: Context) {
 
 		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
 		val APP_CORNER_DPAD_BUTTONS_ENABLED = booleanPreferencesKey("app.corner_dpad_buttons_enabled")
+		val APP_DUAL_CONTINUOUS_ENABLED = booleanPreferencesKey("app.dual_continuous_enabled")
 
 		// Speed
 		val SPEED_RANGE_LOW = floatPreferencesKey("speed.range_low")
@@ -36,13 +51,17 @@ class UserPreferences(private val context: Context) {
 		val SERVO_A_RANGE_LOW = floatPreferencesKey("servo.a.range_low")
 		val SERVO_A_RANGE_HIGH = floatPreferencesKey("servo.a.range_high")
 		val SERVO_A_STATE = booleanPreferencesKey("servo.a.state") // true = HIGH, false = LOW
+		val SERVO_A_MODE = intPreferencesKey("servo.a.mode")
 
 		// Servo B
 		val SERVO_B_RANGE_LOW = floatPreferencesKey("servo.b.range_low")
 		val SERVO_B_RANGE_HIGH = floatPreferencesKey("servo.b.range_high")
 		val SERVO_B_STATE = booleanPreferencesKey("servo.b.state") // true = HIGH, false = LOW
+		val SERVO_B_MODE = intPreferencesKey("servo.b.mode")
+
 
 		// Servo C
+		val SERVO_C_MODE = intPreferencesKey("servo.c.mode")
 		val SERVO_C_INVERTED = booleanPreferencesKey("servo.c.inverted")
 
 		// Stopwatch
@@ -95,6 +114,14 @@ class UserPreferences(private val context: Context) {
 
 	suspend fun setCornerDPadButtonsEnabled(enabled: Boolean) =
 		set(APP_CORNER_DPAD_BUTTONS_ENABLED, enabled)
+
+	val dualContinuousEnabled = get(
+		APP_DUAL_CONTINUOUS_ENABLED, UserPreferencesDefaults.APP_DUAL_CONTINUOUS_ENABLED
+	)
+
+	suspend fun setDualContinuousEnabled(enabled: Boolean) =
+		set(APP_DUAL_CONTINUOUS_ENABLED, enabled)
+
 
 	// Speed
 	val speedState = get(

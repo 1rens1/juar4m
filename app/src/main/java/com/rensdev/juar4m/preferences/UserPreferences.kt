@@ -36,7 +36,6 @@ class UserPreferences(private val context: Context) {
 
 		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
 		val APP_CORNER_DPAD_BUTTONS_ENABLED = booleanPreferencesKey("app.corner_dpad_buttons_enabled")
-		val APP_DUAL_CONTINUOUS_ENABLED = booleanPreferencesKey("app.dual_continuous_enabled")
 
 		// Speed
 		val SPEED_RANGE_LOW = floatPreferencesKey("speed.range_low")
@@ -45,12 +44,14 @@ class UserPreferences(private val context: Context) {
 
 		// Servo A
 		val SERVO_A_MODE = intPreferencesKey("servo.a.mode")
+		val SERVO_A_INVERTED = booleanPreferencesKey("servo.a.inverted")
 		val SERVO_A_RANGE_LOW = floatPreferencesKey("servo.a.range_low")
 		val SERVO_A_RANGE_HIGH = floatPreferencesKey("servo.a.range_high")
 		val SERVO_A_STATE = booleanPreferencesKey("servo.a.state") // true = HIGH, false = LOW
 
 		// Servo B
 		val SERVO_B_MODE = intPreferencesKey("servo.b.mode")
+		val SERVO_B_INVERTED = booleanPreferencesKey("servo.b.inverted")
 		val SERVO_B_RANGE_LOW = floatPreferencesKey("servo.b.range_low")
 		val SERVO_B_RANGE_HIGH = floatPreferencesKey("servo.b.range_high")
 		val SERVO_B_STATE = booleanPreferencesKey("servo.b.state") // true = HIGH, false = LOW
@@ -114,13 +115,6 @@ class UserPreferences(private val context: Context) {
 	suspend fun setCornerDPadButtonsEnabled(enabled: Boolean) =
 		set(APP_CORNER_DPAD_BUTTONS_ENABLED, enabled)
 
-	val dualContinuousEnabled = get(
-		APP_DUAL_CONTINUOUS_ENABLED, UserPreferencesDefaults.APP_DUAL_CONTINUOUS_ENABLED
-	)
-
-	suspend fun setDualContinuousEnabled(enabled: Boolean) = set(APP_DUAL_CONTINUOUS_ENABLED, enabled)
-
-
 	// Speed
 	val speedState = get(
 		SPEED_STATE, UserPreferencesDefaults.SPEED_STATE == RangeState.HIGH
@@ -145,6 +139,9 @@ class UserPreferences(private val context: Context) {
 	val servoAMode = get(SERVO_A_MODE, ServoMode.POSITIONAL.value).map { ServoMode.fromInt(it) }
 	suspend fun setServoAMode(mode: ServoMode) = set(SERVO_A_MODE, mode.value)
 
+	val servoAInverted = get(SERVO_A_INVERTED, UserPreferencesDefaults.SERVO_A_INVERTED)
+	suspend fun setServoAInverted(inverted: Boolean) = set(SERVO_A_INVERTED, inverted)
+
 	val servoAState = get(
 		SERVO_A_STATE, UserPreferencesDefaults.SERVO_A_STATE == RangeState.HIGH
 	).map { isHigh -> if (isHigh) RangeState.HIGH else RangeState.LOW }
@@ -167,6 +164,9 @@ class UserPreferences(private val context: Context) {
 	// Servo B
 	val servoBMode = get(SERVO_B_MODE, ServoMode.POSITIONAL.value).map { ServoMode.fromInt(it) }
 	suspend fun setServoBMode(mode: ServoMode) = set(SERVO_B_MODE, mode.value)
+
+	val servoBInverted = get(SERVO_B_INVERTED, UserPreferencesDefaults.SERVO_B_INVERTED)
+	suspend fun setServoBInverted(inverted: Boolean) = set(SERVO_B_INVERTED, inverted)
 
 	val servoBState = get(
 		SERVO_B_STATE, UserPreferencesDefaults.SERVO_B_STATE == RangeState.HIGH

@@ -103,6 +103,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	val servoAMode = userPreferences.servoAMode.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_MODE
 	)
+	val servoAInverted: StateFlow<Boolean> = userPreferences.servoAInverted.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_INVERTED
+	)
 	val servoARange = userPreferences.servoARange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_RANGE
 	)
@@ -112,6 +115,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 	fun setServoAMode(mode: ServoMode) =
 		viewModelScope.launch { userPreferences.setServoAMode(mode) }
+	fun setServoAInverted(inverted: Boolean) =
+		viewModelScope.launch { userPreferences.setServoAInverted(inverted) }
 	fun setServoARange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoARange(range) }
 
@@ -122,6 +127,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	val servoBMode = userPreferences.servoBMode.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_MODE
 	)
+	val servoBInverted: StateFlow<Boolean> = userPreferences.servoBInverted.stateIn(
+		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_INVERTED
+	)
 	val servoBRange= userPreferences.servoBRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_RANGE
 	)
@@ -131,6 +139,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 	fun setServoBMode(mode: ServoMode) =
 		viewModelScope.launch { userPreferences.setServoBMode(mode) }
+	fun setServoBInverted(inverted: Boolean) =
+		viewModelScope.launch { userPreferences.setServoBInverted(inverted) }
 	fun setServoBRange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoBRange(range) }
 

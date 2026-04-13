@@ -25,23 +25,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +54,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -124,7 +126,6 @@ fun MenuDialog(
 							)
 						}
 						Text("Menu", style = Typography.titleLarge)
-
 					}
 					Image(
 						painter = painterResource(id = R.mipmap.ic_launcher_foreground),
@@ -182,7 +183,6 @@ fun MenuDialog(
 							label = "Vibrations", value = vibrationsEnabled, onValueChange = { isEnabled ->
 								viewModel?.apply {
 									setVibrationsEnabled(isEnabled)
-
 									if (isEnabled) {
 										vibrator.enabled = true
 										vibrator.click()
@@ -215,9 +215,7 @@ fun MenuDialog(
 	if (showServoModeConfigDialog) {
 		Dialog(
 			onDismissRequest = { showServoModeConfigDialog = false },
-			properties = DialogProperties(
-				usePlatformDefaultWidth = false
-			),
+			properties = DialogProperties(usePlatformDefaultWidth = false),
 		) {
 			Box(
 				modifier = Modifier
@@ -236,7 +234,8 @@ fun MenuDialog(
 					)
 				) {
 					Column(
-						modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(0.dp)
+						modifier = Modifier.padding(24.dp),
+						verticalArrangement = Arrangement.spacedBy(0.dp)
 					) {
 						Row(
 							modifier = Modifier
@@ -261,7 +260,10 @@ fun MenuDialog(
 									ServoModeSelect("Servo B", editServoBMode, { editServoBMode = it })
 									ServoModeSelect("Servo C", editServoCMode, { editServoCMode = it })
 								}
-								Column {
+
+								Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+									CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+
 									Surface(
 										modifier = Modifier.fillMaxWidth(),
 										onClick = {
@@ -280,28 +282,29 @@ fun MenuDialog(
 											Text("Reset to Defaults", fontSize = Typography.bodyMedium.fontSize)
 										}
 									}
-									Surface(
-										modifier = Modifier.fillMaxWidth(),
-										onClick = {
-											viewModel?.apply {
-												setServoAMode(editServoAMode)
-												setServoBMode(editServoBMode)
-												setServoCMode(editServoCMode)
-												commandController.sendServoConfig(
-													editServoAMode, editServoBMode, editServoCMode
-												)
-											}
-											showServoModeConfigDialog = false
-										},
-										color = ButtonDefaults.buttonColors().containerColor,
-										contentColor = ButtonDefaults.buttonColors().contentColor,
-										shape = ButtonDefaults.shape,
-									) {
-										Box(
-											modifier = Modifier.padding(vertical = 4.dp),
-											contentAlignment = Alignment.Center
+										Surface(
+											modifier = Modifier.fillMaxWidth(),
+											onClick = {
+												viewModel?.apply {
+													setServoAMode(editServoAMode)
+													setServoBMode(editServoBMode)
+													setServoCMode(editServoCMode)
+													commandController.sendServoConfig(
+														editServoAMode, editServoBMode, editServoCMode
+													)
+												}
+												showServoModeConfigDialog = false
+											},
+											color = ButtonDefaults.buttonColors().containerColor,
+											contentColor = ButtonDefaults.buttonColors().contentColor,
+											shape = ButtonDefaults.shape,
 										) {
-											Text("Save", fontSize = Typography.bodyMedium.fontSize)
+											Box(
+												modifier = Modifier.padding(vertical = 4.dp),
+												contentAlignment = Alignment.Center
+											) {
+												Text("Save", fontSize = Typography.bodyMedium.fontSize)
+											}
 										}
 									}
 								}
@@ -323,7 +326,6 @@ fun MenuDialog(
 			}
 		}
 	}
-
 }
 
 
@@ -393,66 +395,48 @@ private fun AppInfo(modifier: Modifier = Modifier) {
 
 @Composable
 fun ServoModeSelect(label: String, selected: ServoMode, onSelect: (ServoMode) -> Unit) {
-	Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+	Column {
 		Text(text = label, color = White.copy(alpha = 0.8f), fontSize = Typography.bodyMedium.fontSize)
-		ServoModeDropdown(
-			selected = selected, onSelect = onSelect
-		)
+		ServoModeButtonGroup(selected = selected, onSelect = onSelect)
 	}
 }
 
+/**
+ * Segmented button group that replaces the dropdown for servo mode selection.
+ * Selected segment uses the primary button colors; unselected uses surfaceContainerHigh.
+ * The default checkmark icon is suppressed so only the label is shown.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServoModeDropdown(
-	modifier: Modifier = Modifier, selected: ServoMode, onSelect: (ServoMode) -> Unit
+fun ServoModeButtonGroup(
+	modifier: Modifier = Modifier,
+	selected: ServoMode,
+	onSelect: (ServoMode) -> Unit,
 ) {
-	var expanded by remember { mutableStateOf(false) }
-
-	ExposedDropdownMenuBox(
-		expanded = expanded, onExpandedChange = { expanded = !expanded }, modifier = modifier
-	) {
-		Row(
-			modifier = Modifier
-				.menuAnchor(
-					type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true
+	val modes = ServoMode.entries
+	SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+		modes.forEachIndexed { index, mode ->
+			SegmentedButton(
+				selected = mode == selected,
+				onClick = { onSelect(mode) },
+				shape = SegmentedButtonDefaults.itemShape(index, modes.size),
+				colors = SegmentedButtonDefaults.colors(
+					activeContainerColor = ButtonDefaults.buttonColors().containerColor,
+					activeContentColor = ButtonDefaults.buttonColors().contentColor,
+					activeBorderColor = ButtonDefaults.buttonColors().containerColor,
+					inactiveContainerColor = ColorScheme.surfaceContainerHigh,
+					inactiveContentColor = ColorScheme.onSurface,
+					inactiveBorderColor = White.copy(alpha = 0.15f),
+				),
+				// Suppress the default animated checkmark so only the label is visible
+				icon = {},
+				modifier = Modifier.height(28.dp),
+				contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+			) {
+				Text(
+					text = mode.label(),
+					fontSize = Typography.bodySmall.fontSize,
 				)
-				.fillMaxWidth()
-				.background(ColorScheme.surfaceContainerHigh)
-				.clickable { expanded = true }
-				.padding(horizontal = 8.dp, vertical = 4.dp),
-			horizontalArrangement = Arrangement.SpaceBetween,
-			verticalAlignment = Alignment.CenterVertically) {
-			Text(
-				selected.label(), fontSize = Typography.bodySmall.fontSize, color = ColorScheme.onSurface
-			)
-			Icon(
-				imageVector = Icons.Filled.ArrowDropDown,
-				contentDescription = null,
-				tint = White.copy(alpha = 0.5f),
-				modifier = Modifier.size(16.dp)
-			)
-		}
-
-		ExposedDropdownMenu(
-			expanded = expanded,
-			onDismissRequest = { expanded = false },
-			modifier = Modifier.exposedDropdownSize(),
-			containerColor = ColorScheme.surfaceContainerHigh
-		) {
-			ServoMode.entries.forEach { mode ->
-				DropdownMenuItem(
-					modifier = Modifier.height(30.dp),
-					contentPadding = PaddingValues(8.dp, 0.dp),
-					text = {
-						Text(
-							mode.label(),
-							fontSize = Typography.bodySmall.fontSize,
-						)
-					},
-					onClick = {
-						onSelect(mode)
-						expanded = false
-					})
 			}
 		}
 	}

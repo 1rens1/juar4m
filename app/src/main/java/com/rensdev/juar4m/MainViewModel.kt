@@ -115,8 +115,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 	fun setServoAMode(mode: ServoMode) =
 		viewModelScope.launch { userPreferences.setServoAMode(mode) }
+
 	fun setServoAInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoAInverted(inverted) }
+
 	fun setServoARange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoARange(range) }
 
@@ -130,7 +132,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 	val servoBInverted: StateFlow<Boolean> = userPreferences.servoBInverted.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_INVERTED
 	)
-	val servoBRange= userPreferences.servoBRange.stateIn(
+	val servoBRange = userPreferences.servoBRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_RANGE
 	)
 	val servoBState = userPreferences.servoBState.stateIn(
@@ -139,8 +141,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 	fun setServoBMode(mode: ServoMode) =
 		viewModelScope.launch { userPreferences.setServoBMode(mode) }
+
 	fun setServoBInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoBInverted(inverted) }
+
 	fun setServoBRange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoBRange(range) }
 
@@ -163,10 +167,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 	fun setServoCMode(mode: ServoMode) =
 		viewModelScope.launch { userPreferences.setServoCMode(mode) }
+
 	fun setServoCInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoCInverted(inverted) }
+
 	fun setServoCRange(range: ClosedFloatingPointRange<Float>) =
 		viewModelScope.launch { userPreferences.setServoCRange(range) }
+
 	fun setServoCState(state: RangeState) =
 		viewModelScope.launch { userPreferences.setServoCState(state) }
 

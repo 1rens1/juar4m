@@ -1,5 +1,6 @@
 package com.rensdev.juar4m.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,14 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,14 +28,11 @@ import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
-import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -58,6 +54,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
 import com.rensdev.juar4m.BuildConfig
 import com.rensdev.juar4m.MainViewModel
 import com.rensdev.juar4m.R
@@ -69,6 +66,7 @@ import com.rensdev.juar4m.ui.theme.ColorScheme
 import com.rensdev.juar4m.ui.theme.GeistMonoFontFamily
 import com.rensdev.juar4m.ui.theme.Red
 import com.rensdev.juar4m.ui.theme.Theme
+import com.rensdev.juar4m.ui.theme.Transparent
 import com.rensdev.juar4m.ui.theme.Typography
 import com.rensdev.juar4m.ui.theme.White
 import java.time.Instant
@@ -234,8 +232,7 @@ fun MenuDialog(
 					)
 				) {
 					Column(
-						modifier = Modifier.padding(24.dp),
-						verticalArrangement = Arrangement.spacedBy(0.dp)
+						modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(0.dp)
 					) {
 						Row(
 							modifier = Modifier
@@ -256,34 +253,24 @@ fun MenuDialog(
 										.verticalScroll(scrollState),
 									verticalArrangement = Arrangement.SpaceEvenly
 								) {
-									ServoModeSelect("Servo A", editServoAMode, { editServoAMode = it })
-									ServoModeSelect("Servo B", editServoBMode, { editServoBMode = it })
-									ServoModeSelect("Servo C", editServoCMode, { editServoCMode = it })
+									ServoModeSelect(
+										label = "Servo A",
+										selected = editServoAMode,
+										onSelect = { editServoAMode = it })
+									ServoModeSelect(
+										label = "Servo B",
+										selected = editServoBMode,
+										onSelect = { editServoBMode = it })
+									ServoModeSelect(
+										label = "Servo C",
+										selected = editServoCMode,
+										onSelect = { editServoCMode = it })
 								}
 
-								Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+								Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 									CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
-
-									Surface(
-										modifier = Modifier.fillMaxWidth(),
-										onClick = {
-											editServoAMode = UserPreferencesDefaults.SERVO_A_MODE
-											editServoBMode = UserPreferencesDefaults.SERVO_B_MODE
-											editServoCMode = UserPreferencesDefaults.SERVO_C_MODE
-										},
-										color = White.copy(alpha = 0.1f),
-										contentColor = White,
-										shape = ButtonDefaults.shape,
-									) {
-										Box(
-											modifier = Modifier.padding(vertical = 4.dp),
-											contentAlignment = Alignment.Center
-										) {
-											Text("Reset to Defaults", fontSize = Typography.bodyMedium.fontSize)
-										}
-									}
 										Surface(
-											modifier = Modifier.fillMaxWidth(),
+											modifier = Modifier.weight(0.5f),
 											onClick = {
 												viewModel?.apply {
 													setServoAMode(editServoAMode)
@@ -300,10 +287,29 @@ fun MenuDialog(
 											shape = ButtonDefaults.shape,
 										) {
 											Box(
-												modifier = Modifier.padding(vertical = 4.dp),
+												modifier = Modifier.padding(vertical = 6.dp),
 												contentAlignment = Alignment.Center
 											) {
 												Text("Save", fontSize = Typography.bodyMedium.fontSize)
+											}
+										}
+
+										Surface(
+											modifier = Modifier.weight(1f),
+											onClick = {
+												editServoAMode = UserPreferencesDefaults.SERVO_A_MODE
+												editServoBMode = UserPreferencesDefaults.SERVO_B_MODE
+												editServoCMode = UserPreferencesDefaults.SERVO_C_MODE
+											},
+											color = White.copy(alpha = 0.1f),
+											contentColor = White,
+											shape = ButtonDefaults.shape,
+										) {
+											Box(
+												modifier = Modifier.padding(vertical = 6.dp),
+												contentAlignment = Alignment.Center
+											) {
+												Text("Reset to Defaults", fontSize = Typography.bodyMedium.fontSize)
 											}
 										}
 									}
@@ -406,7 +412,6 @@ fun ServoModeSelect(label: String, selected: ServoMode, onSelect: (ServoMode) ->
  * Selected segment uses the primary button colors; unselected uses surfaceContainerHigh.
  * The default checkmark icon is suppressed so only the label is shown.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServoModeButtonGroup(
 	modifier: Modifier = Modifier,
@@ -414,29 +419,32 @@ fun ServoModeButtonGroup(
 	onSelect: (ServoMode) -> Unit,
 ) {
 	val modes = ServoMode.entries
-	SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+	Row(modifier = modifier) {
 		modes.forEachIndexed { index, mode ->
-			SegmentedButton(
-				selected = mode == selected,
+			val isSelected = mode == selected
+			val shape = SegmentedButtonDefaults.itemShape(index, modes.size)
+
+			Surface(
 				onClick = { onSelect(mode) },
-				shape = SegmentedButtonDefaults.itemShape(index, modes.size),
-				colors = SegmentedButtonDefaults.colors(
-					activeContainerColor = ButtonDefaults.buttonColors().containerColor,
-					activeContentColor = ButtonDefaults.buttonColors().contentColor,
-					activeBorderColor = ButtonDefaults.buttonColors().containerColor,
-					inactiveContainerColor = ColorScheme.surfaceContainerHigh,
-					inactiveContentColor = ColorScheme.onSurface,
-					inactiveBorderColor = White.copy(alpha = 0.15f),
+				shape = shape,
+				color = if (isSelected) ButtonDefaults.buttonColors().containerColor else ColorScheme.surfaceContainerHigh,
+				contentColor = if (isSelected) ButtonDefaults.buttonColors().contentColor else ColorScheme.onSurface,
+				border = BorderStroke(
+					width = 1.dp, color = if (isSelected) Transparent else White.copy(alpha = 0.15f)
 				),
-				// Suppress the default animated checkmark so only the label is visible
-				icon = {},
-				modifier = Modifier.height(28.dp),
-				contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+				modifier = Modifier
+					.weight(1f)
+					.fillMaxHeight()
+					.offset(x = if (index > 0) (-1).dp * index else 0.dp)
+					.zIndex(if (isSelected) 1f else 0f)
 			) {
-				Text(
-					text = mode.label(),
-					fontSize = Typography.bodySmall.fontSize,
-				)
+				Box(
+					contentAlignment = Alignment.Center, modifier = Modifier.padding(
+						if (index == 0 || index == modes.size - 1) 12.dp else 8.dp, 4.dp
+					)
+				) {
+					Text(text = mode.label(), fontSize = Typography.bodySmall.fontSize, maxLines = 1)
+				}
 			}
 		}
 	}

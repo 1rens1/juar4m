@@ -217,7 +217,9 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	fun ServoItemContent(item: ServoGridItem) {
 		when (item.mode) {
 			ServoMode.POSITIONAL -> {
-				val servo = when (item.servoId) { 1 -> servoA; 2 -> servoB; else -> servoC }
+				val servo = when (item.servoId) {
+					1 -> servoA; 2 -> servoB; else -> servoC
+				}
 				ToggleServoButton(
 					label = item.label,
 					servo = servo,
@@ -233,6 +235,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 					}
 				)
 			}
+
 			ServoMode.CONTINUOUS -> {
 				val inverted = when (item.servoId) {
 					1 -> servoAInverted
@@ -248,6 +251,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 					inverted = inverted
 				)
 			}
+
 			else -> {}
 		}
 	}

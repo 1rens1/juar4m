@@ -188,7 +188,9 @@ class UserPreferences(private val context: Context) {
 	}
 
 	// Servo C
-	val servoCMode = get(SERVO_C_MODE, UserPreferencesDefaults.SERVO_C_MODE.value).map { ServoMode.fromInt(it) }
+	val servoCMode =
+		get(SERVO_C_MODE, UserPreferencesDefaults.SERVO_C_MODE.value).map { ServoMode.fromInt(it) }
+
 	suspend fun setServoCMode(mode: ServoMode) = set(SERVO_C_MODE, mode.value)
 
 	val servoCInverted = get(SERVO_C_INVERTED, false)

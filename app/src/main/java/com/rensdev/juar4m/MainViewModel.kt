@@ -85,6 +85,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		userPreferences.setCornerDPadButtonsEnabled(enabled)
 	}
 
+	val swapDPadAndServoEnabled = userPreferences.swapDPadAndServoEnabled
+	fun setSwapDPadAndServoEnabled(enabled: Boolean) = viewModelScope.launch {
+		userPreferences.setSwapDPadAndServoEnabled(enabled)
+	}
+
+
 	// Speed
 	val speedRange: StateFlow<ClosedFloatingPointRange<Float>> = userPreferences.speedRange.stateIn(
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SPEED_RANGE
@@ -113,8 +119,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_A_STATE
 	)
 
-	fun setServoAMode(mode: ServoMode) =
-		viewModelScope.launch { userPreferences.setServoAMode(mode) }
+	fun setServoAMode(mode: ServoMode) = viewModelScope.launch { userPreferences.setServoAMode(mode) }
 
 	fun setServoAInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoAInverted(inverted) }
@@ -139,8 +144,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_B_STATE
 	)
 
-	fun setServoBMode(mode: ServoMode) =
-		viewModelScope.launch { userPreferences.setServoBMode(mode) }
+	fun setServoBMode(mode: ServoMode) = viewModelScope.launch { userPreferences.setServoBMode(mode) }
 
 	fun setServoBInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoBInverted(inverted) }
@@ -165,8 +169,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 		viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferencesDefaults.SERVO_C_STATE
 	)
 
-	fun setServoCMode(mode: ServoMode) =
-		viewModelScope.launch { userPreferences.setServoCMode(mode) }
+	fun setServoCMode(mode: ServoMode) = viewModelScope.launch { userPreferences.setServoCMode(mode) }
 
 	fun setServoCInverted(inverted: Boolean) =
 		viewModelScope.launch { userPreferences.setServoCInverted(inverted) }
@@ -253,9 +256,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 					}
 					commandController.syncState(
 						speed,
-						servoAMode.value, servoAAngle,
-						servoBMode.value, servoBAngle,
-						servoCMode.value, servoCAngle
+						servoAMode.value,
+						servoAAngle,
+						servoBMode.value,
+						servoBAngle,
+						servoCMode.value,
+						servoCAngle
 					)
 					commandController.start()
 				} else {

@@ -173,6 +173,10 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 
 	val storedSpeedRange by viewModel?.speedRange.collectAsStateOrFallback(UserPreferencesDefaults.SPEED_RANGE)
 
+	val swapDPadAndServoEnabled by viewModel?.swapDPadAndServoEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_SWAP_DPAD_AND_SERVO_ENABLED
+	)
+
 	// Edit state (mirrors stored, mutated locally until save)
 	var editRangeA by remember { mutableStateOf(storedRangeA) }
 	var editRangeB by remember { mutableStateOf(storedRangeB) }
@@ -221,9 +225,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 					1 -> servoA; 2 -> servoB; else -> servoC
 				}
 				ToggleServoButton(
-					label = item.label,
-					servo = servo,
-					onToggle = {
+					label = item.label, servo = servo, onToggle = {
 						val newState = if (servo.state == RangeState.LOW) RangeState.HIGH else RangeState.LOW
 						when (item.servoId) {
 							1 -> viewModel?.setServoAState(newState)
@@ -232,8 +234,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 						}
 						vibrator?.click()
 						commandController?.setServo(item.servoId, servo.copy(state = newState).getValue())
-					}
-				)
+					})
 			}
 
 			ServoMode.CONTINUOUS -> {
@@ -259,6 +260,7 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 	Column(
 		modifier = modifier,
 		verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+		horizontalAlignment = if (swapDPadAndServoEnabled) Alignment.End else Alignment.Start
 	) {
 		if (!isEditingServos) {
 			Row(
@@ -283,90 +285,87 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				horizontalArrangement = Arrangement.spacedBy(16.dp),
 				verticalAlignment = Alignment.Top,
 			) {
-				// Left: first column of buttons only
-				val firstCol = servoColumns.firstOrNull() ?: emptyList()
-				if (firstCol.isNotEmpty()) {
-					Column(modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)) {
-						for (item in firstCol) {
-							Box(modifier = Modifier.weight(item.units.toFloat())) {
-								ServoItemContent(item)
+				val buttonsPreview = @Composable {
+					val firstCol = servoColumns.firstOrNull() ?: emptyList()
+					if (firstCol.isNotEmpty()) {
+						Column(modifier = Modifier.height(ControllerUI.SERVO_CONTAINER_HEIGHT)) {
+							for (item in firstCol) {
+								Box(modifier = Modifier.weight(item.units.toFloat())) {
+									ServoItemContent(item)
+								}
 							}
 						}
 					}
 				}
 
-				Column(
-					modifier = Modifier
-						.fillMaxWidth()
-						.verticalScroll(rememberScrollState()),
-					verticalArrangement = Arrangement.spacedBy(8.dp)
-				) {
-					// Servo A — range slider or invert toggle
-					if (storedServoAMode == ServoMode.POSITIONAL) {
-						ToggleServoRangeSlider(
-							servo = servoA.copy(range = editRangeA),
-							label = servoALabel,
-							onValueChange = { editRangeA = it }
-						)
-					} else if (storedServoAMode == ServoMode.CONTINUOUS) {
-						InvertServoRow(
-							letter = "A",
-							inverted = servoAInverted,
-							onCheckedChange = {
-								viewModel?.setServoAInverted(it)
-								vibrator?.click()
-							}
-						)
-					}
+				val editSliders = @Composable {
+					Column(
+						modifier = Modifier
+							.weight(1f)
+							.verticalScroll(rememberScrollState()),
+						verticalArrangement = Arrangement.spacedBy(8.dp)
+					) {
+						// Servo A — range slider or invert toggle
+						if (storedServoAMode == ServoMode.POSITIONAL) {
+							ToggleServoRangeSlider(
+								servo = servoA.copy(range = editRangeA),
+								label = servoALabel,
+								onValueChange = { editRangeA = it })
+						} else if (storedServoAMode == ServoMode.CONTINUOUS) {
+							InvertServoRow(
+								letter = "A", inverted = servoAInverted, onCheckedChange = {
+									viewModel?.setServoAInverted(it)
+									vibrator?.click()
+								})
+						}
 
-					// Servo B — range slider or invert toggle
-					if (storedServoBMode == ServoMode.POSITIONAL) {
-						ToggleServoRangeSlider(
-							servo = servoB.copy(range = editRangeB),
-							label = servoBLabel,
-							onValueChange = { editRangeB = it }
-						)
-					} else if (storedServoBMode == ServoMode.CONTINUOUS) {
-						InvertServoRow(
-							letter = "B",
-							inverted = servoBInverted,
-							onCheckedChange = {
-								viewModel?.setServoBInverted(it)
-								vibrator?.click()
-							}
-						)
-					}
+						// Servo B — range slider or invert toggle
+						if (storedServoBMode == ServoMode.POSITIONAL) {
+							ToggleServoRangeSlider(
+								servo = servoB.copy(range = editRangeB),
+								label = servoBLabel,
+								onValueChange = { editRangeB = it })
+						} else if (storedServoBMode == ServoMode.CONTINUOUS) {
+							InvertServoRow(
+								letter = "B", inverted = servoBInverted, onCheckedChange = {
+									viewModel?.setServoBInverted(it)
+									vibrator?.click()
+								})
+						}
 
-					// Servo C — range slider or invert toggle
-					if (storedServoCMode == ServoMode.POSITIONAL) {
-						ToggleServoRangeSlider(
-							servo = servoC.copy(range = editRangeC),
-							label = servoCLabel,
-							onValueChange = { editRangeC = it }
-						)
-					} else if (storedServoCMode == ServoMode.CONTINUOUS) {
-						InvertServoRow(
-							letter = "C",
-							inverted = servoCInverted,
-							onCheckedChange = {
-								viewModel?.setServoCInverted(it)
-								vibrator?.click()
-							}
-						)
-					}
+						// Servo C — range slider or invert toggle
+						if (storedServoCMode == ServoMode.POSITIONAL) {
+							ToggleServoRangeSlider(
+								servo = servoC.copy(range = editRangeC),
+								label = servoCLabel,
+								onValueChange = { editRangeC = it })
+						} else if (storedServoCMode == ServoMode.CONTINUOUS) {
+							InvertServoRow(
+								letter = "C", inverted = servoCInverted, onCheckedChange = {
+									viewModel?.setServoCInverted(it)
+									vibrator?.click()
+								})
+						}
 
-					SpeedRangeSlider(
-						speedRange = editSpeedRange,
-						onValueChange = { editSpeedRange = it }
-					)
+						SpeedRangeSlider(
+							speedRange = editSpeedRange, onValueChange = { editSpeedRange = it })
+					}
+				}
+
+				if (swapDPadAndServoEnabled) {
+					editSliders()
+					buttonsPreview()
+				} else {
+					buttonsPreview()
+					editSliders()
 				}
 			}
 		}
 
 		Row(
-			horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End),
-			verticalAlignment = Alignment.CenterVertically,
-			modifier = Modifier.fillMaxWidth()
+			horizontalArrangement = Arrangement.spacedBy(
+				16.dp, if (swapDPadAndServoEnabled) Alignment.Start else Alignment.End
+			), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
 		) {
 			if (isEditingServos) {
 				Surface(
@@ -392,31 +391,29 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 					}
 				}
 			}
-			EditServoRangeButton(
-				isEditingServos = isEditingServos,
-				viewModel = viewModel,
-				onEdit = {
-					isEditingServos = !isEditingServos
-					vibrator?.click()
-				},
-				onSave = {
-					viewModel?.setServoARange(editRangeA)
-					viewModel?.setServoBRange(editRangeB)
-					viewModel?.setServoCRange(editRangeC)
-					viewModel?.setSpeedRange(editSpeedRange)
-					isEditingServos = !isEditingServos
-					vibrator?.click()
-					val speedValue =
-						if (viewModel?.speedState?.value == RangeState.HIGH) editSpeedRange.endInclusive
-						else editSpeedRange.start
-					commandController?.syncState(
-						speedValue.toInt(),
-						storedServoAMode, ToggleServo(storedStateA, editRangeA).getValue(),
-						storedServoBMode, ToggleServo(storedStateB, editRangeB).getValue(),
-						storedServoCMode, ToggleServo(storedStateC, editRangeC).getValue()
-					)
-				}
-			)
+			EditServoRangeButton(isEditingServos = isEditingServos, viewModel = viewModel, onEdit = {
+				isEditingServos = !isEditingServos
+				vibrator?.click()
+			}, onSave = {
+				viewModel?.setServoARange(editRangeA)
+				viewModel?.setServoBRange(editRangeB)
+				viewModel?.setServoCRange(editRangeC)
+				viewModel?.setSpeedRange(editSpeedRange)
+				isEditingServos = !isEditingServos
+				vibrator?.click()
+				val speedValue =
+					if (viewModel?.speedState?.value == RangeState.HIGH) editSpeedRange.endInclusive
+					else editSpeedRange.start
+				commandController?.syncState(
+					speedValue.toInt(),
+					storedServoAMode,
+					ToggleServo(storedStateA, editRangeA).getValue(),
+					storedServoBMode,
+					ToggleServo(storedStateB, editRangeB).getValue(),
+					storedServoCMode,
+					ToggleServo(storedStateC, editRangeC).getValue()
+				)
+			})
 		}
 	}
 }
@@ -517,14 +514,10 @@ fun ToggleServoButton(
 			}
 			Row(modifier = Modifier.width(ControllerUI.SERVO_BUTTON_SIZE)) {
 				ToggleServoHighLowIndicator(
-					modifier = Modifier.weight(1f),
-					targetState = RangeState.LOW,
-					servo = servo
+					modifier = Modifier.weight(1f), targetState = RangeState.LOW, servo = servo
 				)
 				ToggleServoHighLowIndicator(
-					modifier = Modifier.weight(1f),
-					targetState = RangeState.HIGH,
-					servo = servo
+					modifier = Modifier.weight(1f), targetState = RangeState.HIGH, servo = servo
 				)
 			}
 		}

@@ -79,6 +79,9 @@ fun MainContent(
 	val stopwatchModeEnabled by viewModel?.stopwatchModeEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_STOPWATCH_MODE_ENABLED
 	)
+	val swapDPadAndServoEnabled by viewModel?.swapDPadAndServoEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_SWAP_DPAD_AND_SERVO_ENABLED
+	)
 
 	LaunchedEffect(viewModel) {
 		viewModel?.userMessages?.collectLatest {
@@ -113,25 +116,36 @@ fun MainContent(
 						.fillMaxSize()
 						.padding(horizontal = 16.dp)
 				) {
-					ServoSection(
-						viewModel, modifier = Modifier
-							.weight(1f)
-							.fillMaxSize()
-							.padding(vertical = 48.dp)
-					)
-					Box(
-						modifier = Modifier
-							.weight(1f)
-							.fillMaxSize()
-					) {
-						DPadSection(
-							viewModel
-						)
-						SpeedSection(
+					val servoSection = @Composable {
+						ServoSection(
 							viewModel, modifier = Modifier
-								.align(Alignment.TopEnd)
-								.offset(y = 28.dp)
+								.weight(1f)
+								.fillMaxSize()
+								.padding(vertical = 48.dp)
 						)
+					}
+
+					val dpadSection = @Composable {
+						Box(
+							modifier = Modifier
+								.weight(1f)
+								.fillMaxSize()
+						) {
+							DPadSection(viewModel)
+							SpeedSection(
+								viewModel, modifier = Modifier
+									.align(if (swapDPadAndServoEnabled) Alignment.TopStart else Alignment.TopEnd)
+									.offset(y = 48.dp)
+							)
+						}
+					}
+
+					if (swapDPadAndServoEnabled) {
+						dpadSection()
+						servoSection()
+					} else {
+						servoSection()
+						dpadSection()
 					}
 				}
 

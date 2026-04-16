@@ -36,6 +36,7 @@ class UserPreferences(private val context: Context) {
 
 		val APP_MARQUEE_ANIMATION_ENABLED = booleanPreferencesKey("app.marquee_animation_enabled")
 		val APP_CORNER_DPAD_BUTTONS_ENABLED = booleanPreferencesKey("app.corner_dpad_buttons_enabled")
+		val APP_SWAP_DPAD_AND_SERVO_ENABLED = booleanPreferencesKey("app.swap_dpad_and_servo_enabled")
 
 		// Speed
 		val SPEED_RANGE_LOW = floatPreferencesKey("speed.range_low")
@@ -114,6 +115,13 @@ class UserPreferences(private val context: Context) {
 
 	suspend fun setCornerDPadButtonsEnabled(enabled: Boolean) =
 		set(APP_CORNER_DPAD_BUTTONS_ENABLED, enabled)
+
+	val swapDPadAndServoEnabled = get(
+		APP_SWAP_DPAD_AND_SERVO_ENABLED, UserPreferencesDefaults.APP_SWAP_DPAD_AND_SERVO_ENABLED
+	)
+
+	suspend fun setSwapDPadAndServoEnabled(enabled: Boolean) =
+		set(APP_SWAP_DPAD_AND_SERVO_ENABLED, enabled)
 
 	// Speed
 	val speedState = get(

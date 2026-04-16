@@ -83,6 +83,9 @@ fun MenuDialog(
 	val cornerDPadButtonsEnabled by viewModel?.cornerDPadButtonsEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_CORNER_DPAD_BUTTONS_ENABLED
 	)
+	val swapDPadAndServoEnabled by viewModel?.swapDPadAndServoEnabled.collectAsStateOrFallback(
+		UserPreferencesDefaults.APP_SWAP_DPAD_AND_SERVO_ENABLED
+	)
 	val vibrationsEnabled by viewModel?.vibrationsEnabled.collectAsStateOrFallback(
 		UserPreferencesDefaults.APP_VIBRATIONS_ENABLED
 	)
@@ -162,6 +165,12 @@ fun MenuDialog(
 							value = cornerDPadButtonsEnabled,
 							onValueChange = { isEnabled ->
 								viewModel?.setCornerDPadButtonsEnabled(isEnabled)
+							})
+						ToggleSetting(
+							label = "Swap DPad and Servo Controls",
+							value = swapDPadAndServoEnabled,
+							onValueChange = { isEnabled ->
+								viewModel?.setSwapDPadAndServoEnabled(isEnabled)
 							})
 						SettingButton(
 							modifier = Modifier.clickable(onClick = { showServoModeConfigDialog = true })

@@ -17,3 +17,4 @@ local.properties
 *.keystore
 *.env
 /app/release
+/gradle/gradle-daemon-jvm.properties

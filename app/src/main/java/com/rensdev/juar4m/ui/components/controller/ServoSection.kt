@@ -367,53 +367,68 @@ fun ServoSection(viewModel: MainViewModel?, modifier: Modifier = Modifier) {
 				16.dp, if (swapDPadAndServoEnabled) Alignment.Start else Alignment.End
 			), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
 		) {
-			if (isEditingServos) {
-				Surface(
-					modifier = Modifier
-						.height(ButtonDefaults.MinHeight)
-						.clip(ButtonDefaults.shape)
-						.clickable {
-							vibrator?.click()
-							editRangeA = UserPreferencesDefaults.SERVO_A_RANGE
-							editRangeB = UserPreferencesDefaults.SERVO_B_RANGE
-							editRangeC = UserPreferencesDefaults.SERVO_C_RANGE
-							editSpeedRange = UserPreferencesDefaults.SPEED_RANGE
-							viewModel?.setServoAInverted(UserPreferencesDefaults.SERVO_A_INVERTED)
-							viewModel?.setServoBInverted(UserPreferencesDefaults.SERVO_B_INVERTED)
-							viewModel?.setServoCInverted(UserPreferencesDefaults.SERVO_C_INVERTED)
-						}, shape = ButtonDefaults.shape, color = White.copy(alpha = 0.1f), contentColor = White
-				) {
-					Box(
-						modifier = Modifier.padding(ButtonDefaults.ContentPadding),
-						contentAlignment = Alignment.Center
+			val resetButton = @Composable {
+
+				if (isEditingServos) {
+					Surface(
+						modifier = Modifier
+							.height(ButtonDefaults.MinHeight)
+							.clip(ButtonDefaults.shape)
+							.clickable {
+								vibrator?.click()
+								editRangeA = UserPreferencesDefaults.SERVO_A_RANGE
+								editRangeB = UserPreferencesDefaults.SERVO_B_RANGE
+								editRangeC = UserPreferencesDefaults.SERVO_C_RANGE
+								editSpeedRange = UserPreferencesDefaults.SPEED_RANGE
+								viewModel?.setServoAInverted(UserPreferencesDefaults.SERVO_A_INVERTED)
+								viewModel?.setServoBInverted(UserPreferencesDefaults.SERVO_B_INVERTED)
+								viewModel?.setServoCInverted(UserPreferencesDefaults.SERVO_C_INVERTED)
+							},
+						shape = ButtonDefaults.shape,
+						color = White.copy(alpha = 0.1f),
+						contentColor = White
 					) {
-						Text(text = "Reset to defaults", style = Typography.labelLarge)
+						Box(
+							modifier = Modifier.padding(ButtonDefaults.ContentPadding),
+							contentAlignment = Alignment.Center
+						) {
+							Text(text = "Reset to defaults", style = Typography.labelLarge)
+						}
 					}
 				}
 			}
-			EditServoRangeButton(isEditingServos = isEditingServos, viewModel = viewModel, onEdit = {
-				isEditingServos = !isEditingServos
-				vibrator?.click()
-			}, onSave = {
-				viewModel?.setServoARange(editRangeA)
-				viewModel?.setServoBRange(editRangeB)
-				viewModel?.setServoCRange(editRangeC)
-				viewModel?.setSpeedRange(editSpeedRange)
-				isEditingServos = !isEditingServos
-				vibrator?.click()
-				val speedValue =
-					if (viewModel?.speedState?.value == RangeState.HIGH) editSpeedRange.endInclusive
-					else editSpeedRange.start
-				commandController?.syncState(
-					speedValue.toInt(),
-					storedServoAMode,
-					ToggleServo(storedStateA, editRangeA).getValue(),
-					storedServoBMode,
-					ToggleServo(storedStateB, editRangeB).getValue(),
-					storedServoCMode,
-					ToggleServo(storedStateC, editRangeC).getValue()
-				)
-			})
+			val editSaveButton = @Composable {
+				EditServoRangeButton(isEditingServos = isEditingServos, viewModel = viewModel, onEdit = {
+					isEditingServos = !isEditingServos
+					vibrator?.click()
+				}, onSave = {
+					viewModel?.setServoARange(editRangeA)
+					viewModel?.setServoBRange(editRangeB)
+					viewModel?.setServoCRange(editRangeC)
+					viewModel?.setSpeedRange(editSpeedRange)
+					isEditingServos = !isEditingServos
+					vibrator?.click()
+					val speedValue =
+						if (viewModel?.speedState?.value == RangeState.HIGH) editSpeedRange.endInclusive
+						else editSpeedRange.start
+					commandController?.syncState(
+						speedValue.toInt(),
+						storedServoAMode,
+						ToggleServo(storedStateA, editRangeA).getValue(),
+						storedServoBMode,
+						ToggleServo(storedStateB, editRangeB).getValue(),
+						storedServoCMode,
+						ToggleServo(storedStateC, editRangeC).getValue()
+					)
+				})
+			}
+			if (swapDPadAndServoEnabled) {
+				editSaveButton()
+				resetButton()
+			} else {
+				resetButton()
+				editSaveButton()
+			}
 		}
 	}
 }
@@ -434,6 +449,7 @@ fun InvertServoRow(
 	) {
 		Switch(
 			modifier = Modifier
+				.offset(x = (-8).dp)
 				.rotate(90f)
 				.scale(0.7f)
 				.height(ButtonDefaults.MinHeight),
@@ -456,7 +472,7 @@ fun InvertServoRow(
 				checkedBorderColor = White.copy(alpha = 0.15f),
 			)
 		)
-		Text("Invert $letter", style = Typography.labelMedium)
+		Text("Invert Servo $letter", style = Typography.labelMedium)
 	}
 }
 

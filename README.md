@@ -24,6 +24,15 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 - Android 10 ("Q") (API level 29) or greater
 - Bluetooth connectivity & permissions
 
+## How to Install
+
+> [!NOTE]
+> This app is Android only
+
+1. Go to the [Actions](https://github.com/1rens1/juar4m/actions) tab and click on the latest successfull deployment (green check)
+2. Scroll down and download the `Signed-APK.zip`
+3. Extract the zip file and install the APK
+
 ## Features
 
 ### Connectivity & Safety

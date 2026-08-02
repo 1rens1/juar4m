@@ -1,4 +1,3 @@
-import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -10,19 +9,19 @@ plugins {
 	alias(libs.plugins.kotlin.compose)
 }
 
+// Safely fetch commit count (defaults to 1 if git fails)
 val commitCount = providers.exec {
 	commandLine("git", "rev-list", "--count", "HEAD")
-}.standardOutput.asText.map { it.trim().toInt() }
+}.standardOutput.asText.map { it.trim().toIntOrNull() ?: 1 }
 
+// Safely fetch short commit hash (defaults to "dev" if git fails)
 val commitHash = providers.exec {
 	commandLine("git", "rev-parse", "--short", "HEAD")
-}.standardOutput.asText.map { it.trim() }
+}.standardOutput.asText.map { it.trim().ifEmpty { "dev" } }
 
 android {
 	namespace = "com.rensdev.juar4m"
-	compileSdk {
-		version = release(36)
-	}
+	compileSdk = 36
 
 	defaultConfig {
 		applicationId = "com.rensdev.juar4m"
@@ -32,8 +31,7 @@ android {
 		versionName = "1.6.3-${commitHash.get()}"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-		buildConfigField("long", "BUILD_TIME", System.currentTimeMillis().toString())
+		buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
 	}
 
 	signingConfigs {
@@ -49,30 +47,32 @@ android {
 		release {
 			isMinifyEnabled = true
 			isShrinkResources = true
-			proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+			proguardFiles(
+				getDefaultProguardFile("proguard-android-optimize.txt"),
+				"proguard-rules.pro"
+			)
 			signingConfig = signingConfigs.getByName("release")
 		}
 	}
+
 	compileOptions {
 		sourceCompatibility = JavaVersion.VERSION_11
 		targetCompatibility = JavaVersion.VERSION_11
 	}
+
 	buildFeatures {
 		compose = true
 		buildConfig = true
 	}
 }
 
+// Clean APK renaming using official AGP public APIs (No internal class imports)
 androidComponents {
 	onVariants { variant ->
+		val date = SimpleDateFormat("yyyyMMdd").format(Date())
 		variant.outputs.forEach { output ->
-			if (output is VariantOutputImpl) {
-				val type = variant.name
-				val version = output.versionName.get()
-				val date = SimpleDateFormat("yyyyMMdd").format(Date())
-
-				output.outputFileName = "$appName-${type}_${date}_v${version}.apk"
-			}
+			val version = output.versionName.get()
+			output.outputFileName.set("$appName-${variant.name}_${date}_v${version}.apk")
 		}
 	}
 }
@@ -96,6 +96,7 @@ dependencies {
 	implementation(libs.androidx.compose.ui.text.google.fonts)
 	implementation(libs.androidx.datastore.preferences)
 	implementation(libs.androidx.material3)
+
 	testImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)

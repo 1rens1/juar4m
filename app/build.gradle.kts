@@ -1,6 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.text.SimpleDateFormat
-import java.util.Date
 
 val appName = "JUAR4M"
 
@@ -28,7 +26,7 @@ android {
 		minSdk = 29
 		targetSdk = 36
 		versionCode = commitCount.get()
-		versionName = "1.6.3-${commitHash.get()}"
+		versionName = System.getenv("VERSION_NAME")?.removePrefix("v") ?: "1.6.3-${commitHash.get()}"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 		buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
@@ -63,17 +61,6 @@ android {
 	buildFeatures {
 		compose = true
 		buildConfig = true
-	}
-}
-
-// Clean APK renaming using official AGP public APIs (No internal class imports)
-androidComponents {
-	onVariants { variant ->
-		val date = SimpleDateFormat("yyyyMMdd").format(Date())
-		variant.outputs.forEach { output ->
-			val version = output.versionName.get()
-			output.outputFileName.set("$appName-${variant.name}_${date}_v${version}.apk")
-		}
 	}
 }
 

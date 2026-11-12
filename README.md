@@ -22,16 +22,13 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 ## Requirements
 
 - Android 10 ("Q") (API level 29) or greater
-- Bluetooth connectivity & permissions
+- Bluetooth connectivity and permissions
 
-## How to Install
+## Download and Install
 
-> [!NOTE]
-> This app is Android only
-
-1. Go to the [Actions](https://github.com/1rens1/juar4m/actions) tab and click on the latest successfull deployment (green check)
-2. Scroll down and download the `Signed-APK.zip`
-3. Extract the zip file and install the APK
+1. Open the [latest GitHub Release](https://github.com/1rens1/juar4m/releases/latest).
+2. Under **Assets**, download the `.apk` file.
+3. Open the downloaded APK on your Android device and follow the installation prompts. Android may ask you to allow your browser or file manager to install unknown apps.
 
 ## Features
 
@@ -39,8 +36,8 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 
 - **Auto-Connect:** Automatically connects to the last used device on launch and reconnects if the link is dropped.
 - **Watchdog Protocol:**
-	- Sends continuous movement commands (Forward, Backward, Left, or Right).
-	- If the Arduino does not receive a command within the defined timeout, it automatically stops all motors to prevent runaway robots. (Timeout is defined in the Arduino repository)
+  - Sends continuous movement commands (Forward, Backward, Left, or Right).
+  - If the Arduino does not receive a command within the defined timeout, it automatically stops all motors to prevent runaway robots. (Timeout is defined in the Arduino repository.)
 
 ### Controls
 
@@ -71,4 +68,3 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 ## Generative AI
 
 Some Generative AI was used in the development of this project, with all code subject to manual review and testing.
-

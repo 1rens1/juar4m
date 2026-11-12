@@ -28,7 +28,7 @@ android {
 		minSdk = 29
 		targetSdk = 36
 		versionCode = commitCount.get()
-		versionName = "1.6.3-${commitHash.get()}"
+		versionName = System.getenv("VERSION_NAME")?.removePrefix("v") ?: "1.6.3-${commitHash.get()}"
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 		buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")

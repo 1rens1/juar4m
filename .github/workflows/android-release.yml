@@ -1,0 +1,68 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish signed APK
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_FILE: release.jks
+          VERSION_NAME: ${{ github.ref_name }}
+        run: |
+          for secret_name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!secret_name}" ]]; then
+              echo "::error::Required release secret ${secret_name} is not configured."
+              exit 1
+            fi
+          done
+
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.jks
+          test -s app/release.jks
+          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleRelease
+
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: app/build/outputs/apk/release/*.apk
+
+      - name: Remove signing keystore
+        if: always()
+        run: rm -f app/release.jks

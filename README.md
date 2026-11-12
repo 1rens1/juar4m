@@ -30,6 +30,11 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 2. Under **Assets**, download the `.apk` file.
 3. Open the downloaded APK on your Android device and follow the installation prompts. Android may ask you to allow your browser or file manager to install unknown apps.
 
+## CI/CD
+
+- Pull requests and pushes to `master` run lint, unit tests, and a debug APK build.
+- Push a version tag (e.g. `v1.0.0`) to build and publish a signed APK to [GitHub Releases](https://github.com/1rens1/juar4m/releases). Release signing secrets must be configured in the GitHub `release` environment.
+
 ## Features
 
 ### Connectivity & Safety

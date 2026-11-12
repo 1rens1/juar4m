@@ -30,26 +30,6 @@ The logo (designed by Jo) features a sabertooth, symbolizing precision and decis
 2. Under **Assets**, download the `.apk` file.
 3. Open the downloaded APK on your Android device and follow the installation prompts. Android may ask you to allow your browser or file manager to install unknown apps.
 
-The release page provides the APK directly; there is no archive to extract.
-
-## CI and Releases
-
-Pull requests targeting `master` and pushes to `master` run Android lint, local unit tests, and a debug APK build.
-
-Signed release APKs are built and attached directly to GitHub Releases when a version tag is pushed:
-
-```sh
-git tag v1.6.4
-git push origin v1.6.4
-```
-
-The release workflow reads these secrets from the GitHub Actions `release` environment:
-
-- `KEYSTORE_BASE64`: base64-encoded release keystore
-- `KEYSTORE_PASSWORD`
-- `KEY_ALIAS`
-- `KEY_PASSWORD`
-
 ## Features
 
 ### Connectivity & Safety
